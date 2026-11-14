@@ -1,0 +1,5 @@
+{
+  "name": "CircuitLab — Electrical Circuit & Power System Simulator",
+  "description": "Browser-based DC, AC steady-state, transient, and three-phase power system circuit simulator using Modified Nodal Analysis (MNA).",
+  "requestFramePermissions": []
+}
