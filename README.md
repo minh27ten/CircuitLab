@@ -12,8 +12,8 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
 
 | Release File | Size | Platform | How to Run |
 | :--- | :---: | :--- | :--- |
-| **`CircuitLab-EN.exe`** | ~1.08 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2 and compiled with `+crt-static`, requiring no external DLLs). |
-| **`CircuitLab-EN-Portable.html`** | ~392 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
+| **`CircuitLab-EN.exe`** | ~1.10 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2 and compiled with `+crt-static`, requiring no external DLLs). |
+| **`CircuitLab-EN-Portable.html`** | ~413 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
 
 *You can also host it statically on GitHub Pages at https://minh27ten.github.io/CircuitLab/.*
 
@@ -35,7 +35,7 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
   - **Two-Port Network:** Extract complex $[Z]$, $[Y]$, and transmission $[A]$ parameter matrices between any two port pairs.
 - **Three-Phase Power Systems & Interactive Schematic Capture:**
   - Three-phase $Y/\Delta$ sources, 4-wire transmission lines with neutral impedance $Z_N$, balanced/unbalanced $Y/\Delta$ loads, and **neutral point shift voltage ($U_{N'N}$)**.
-  - Snap-to-grid `20 px` orthogonal wiring (`Space` to toggle elbow), live canvas overlays, 3 built-in circuit presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*), and `.json` circuit import/export.
+  - Snap-to-grid `20 px` orthogonal wiring (`Space` to toggle elbow), live canvas overlays, 4 built-in circuit presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*), and `.json` circuit import/export.
 
 ---
 
@@ -45,7 +45,7 @@ In addition to **Ground (`GND`)**, CircuitLab includes 16 standard electrical en
 
 | Category | Type / Designator | Elements |
 | :--- | :--- | :--- |
-| **Independent Sources** | `V_SRC` (`E`), `I_SRC` (`J`) | Independent Voltage Source, Independent Current Source (DC / AC / Step) |
+| **Independent Sources** | `V_SRC` (`E`), `I_SRC` (`J`) | Independent Voltage Source, Independent Current Source (DC / AC / Mixed multi-harmonic / Step) |
 | **Passive Elements** | `RESISTOR` (`R`), `CAPACITOR` (`C`), `INDUCTOR` (`L`), `MUTUAL` (`M`) | Resistor, Capacitor, Inductor, Mutual Coupling |
 | **Dependent Sources** | `VCVS`, `CCVS`, `VCCS`, `CCCS` | All four linear controlled sources ($\mu, r, g, \beta$) |
 | **Active Analog** | `OPAMP` (`OA`) | Ideal Operational Amplifier ($V_+ = V_-$, $I_{\text{in}} = 0$) |
@@ -77,7 +77,7 @@ Open `http://localhost:3000/` in your browser.
 | :--- | :--- |
 | `npm run dev` | Start Vite development server on port `3000` |
 | `npm run lint` | Run TypeScript static type checking (`tsc --noEmit`) |
-| `npm test` | Run all 31 solver & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
+| `npm test` | Run all 34 solver & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
 | `npm run build` | Build production static bundle into `dist/` |
 | `npm run preview` | Preview the production bundle locally via Vite Preview |
 | `npm run build:portable` | Bundle a single self-contained offline HTML file (`dist-portable/index.html`) |
@@ -105,7 +105,7 @@ Open `http://localhost:3000/` in your browser.
 │   │   ├── mna.test.ts            # Core solver unit tests
 │   │   └── __tests__/             # solver.test.ts & stress.test.ts
 │   ├── components/                # React UI (Canvas, Palette, Inspector, TransientPlot, etc.)
-│   ├── data/presets.ts            # 3 built-in reference circuits
+│   ├── data/presets.ts            # 4 built-in reference circuits
 │   ├── types/circuit.ts           # Circuit & simulation result TypeScript interfaces
 │   ├── App.tsx                    # Top-level workbench state & keyboard shortcuts
 │   └── main.tsx

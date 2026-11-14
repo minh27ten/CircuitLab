@@ -29,7 +29,7 @@ export const COMPONENT_CATALOG: ComponentMeta[] = [
     category: 'source',
     categoryLabel: 'Sources & Reference',
     prefix: 'E',
-    description: 'DC, sinusoidal AC, or Step voltage source.',
+    description: 'DC, sinusoidal AC, mixed multi-harmonic, or Step voltage source.',
   },
   {
     type: 'I_SRC',
@@ -38,7 +38,7 @@ export const COMPONENT_CATALOG: ComponentMeta[] = [
     category: 'source',
     categoryLabel: 'Sources & Reference',
     prefix: 'J',
-    description: 'DC, sinusoidal AC, or Step current source.',
+    description: 'DC, sinusoidal AC, mixed multi-harmonic, or Step current source.',
   },
   {
     type: 'RESISTOR',
@@ -333,6 +333,11 @@ export function createDefaultElement(
         waveform: 'AC',
         dcValue: 12,
         acValue: 220,
+        mixedDcValue: 12,
+        harmonics: [
+          { id: 'h1', freqHz: 50, amplitude: 220, phaseDeg: 0 },
+          { id: 'h2', freqHz: 150, amplitude: 40, phaseDeg: -30 },
+        ],
         amplitudeType: 'RMS',
         phaseDeg: 0,
         freqHz: 50,
@@ -346,6 +351,8 @@ export function createDefaultElement(
         waveform: 'DC',
         dcValue: 2,
         acValue: 5,
+        mixedDcValue: 2,
+        harmonics: [{ id: 'h1', freqHz: 50, amplitude: 3, phaseDeg: 0 }],
         amplitudeType: 'RMS',
         phaseDeg: 0,
         freqHz: 50,

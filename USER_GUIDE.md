@@ -22,12 +22,12 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 **CircuitLab** organizes your engineering workbench into four regions:
 
-- **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
+- **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
 - **Component Palette (Left Panel):** Houses all `16+GND` electrical components with real-time search by name, designator, or keyword (`resistor`, `op-amp`, `3-phase`, `two-port`, ...). Toggle panel visibility from the left toolbar button when working on large schematics.
 - **Schematic Canvas (Center):** Snap-to-grid `20 px` interactive editor featuring live node voltage (`N...`) and branch current (`I=...`) **Overlays**, smooth cursor-centered zoom (`+`, `−`, *Fit schematic to view*), and floating quick actions above selected elements.
 - **Inspector & Results Panel (Right Panel):** Organized into four tabs:
   - **Props:** Edit all electrical parameters of the selected component or wire segment.
-  - **Results:** Inspect the *Power Balance* summary (`P`, `Q`, *Verified* badge), *Node Voltages* table, and *Branch Currents & Power* table.
+  - **Results:** Inspect the *Multi-Frequency Superposition* banner (when multiple frequencies or harmonics are present), *Power Balance* summary (`P`, `Q`, *Verified* badge), *Node Voltages* table, and *Branch Currents & Power* table; click any node or element row to inspect its **Harmonic Spectrum & Time-Domain** card.
   - **Plot:** Multi-channel interactive SVG oscilloscope for transient waveforms `v(t)` and `i(t)`.
   - **Equiv:** Extract *Thévenin / Norton* equivalents and *Two-Port `[Z]`, `[Y]`, `[A]`* matrices.
 
@@ -77,7 +77,9 @@ Complete user manual covering schematic capture, component configuration, the fo
 - **Voltage Source (`V_SRC`) & Current Source (`I_SRC`):**
   - **DC:** Constant DC value.
   - **AC Sine:** Magnitude entered as **RMS** or **Peak** ($V_m = \sqrt{2} V_{\text{rms}}$), frequency (Hz), and initial phase angle (degrees). Time-domain convention: $v(t) = V_m \cos(2\pi f t + \varphi)$.
+  - **Mixed (`MIXED`):** Combines a **DC Offset** and a dynamic **Harmonics / Frequencies** table (Frequency `Hz`, Amplitude in **RMS** or **Peak**, and Phase `°`) on a **single source**, with a live preview of total True RMS and composite time-domain waveform $v(t)$ / $i(t)$.
   - **Step:** Ideal step transition from *Initial* to *Final* value at `Step Time`.
+  - *JSON Import/Export:* `.json` circuit files preserve and validate `MIXED` source parameters (`mixedDcValue` and `harmonics`).
   - *Current source polarity:* Positive reference arrow flows internally from `−` (`n`) to `+` (`p`).
 
 ### Passive Elements & Mutual Coupling
@@ -117,7 +119,8 @@ Complete user manual covering schematic capture, component configuration, the fo
 ### Interpreting Power & Sign Conventions
 - **Power Balance Verification:** A green **Verified** pill indicates total delivered active power matches total absorbed active power within numerical tolerance ($|\sum P_{\text{gen}} - \sum P_{\text{abs}}| < 0.05\ \text{W}$).
 - **Passive Sign Convention:** Branch current `I` enters **pin 1 (`+`)** and leaves **pin 2 (`−`)**. Consequently, **`P > 0` means absorbed power**, whereas **`P < 0` means delivered power** (source/generator).
-- **Transient Plot Tab:** Filter waveforms by **All**, **Voltage (v)**, or **Current (i)**, toggle individual traces, and hover over the plot canvas to inspect exact instantaneous samples in milliseconds.
+- **Mixed-Source Analysis (Multi-Frequency Superposition):** When a circuit contains multiple source frequencies or a **Mixed** source, **AC Phasor** mode solves MNA independently at each harmonic frequency ($0\ \text{Hz}$ and each $f_k > 0$), shows the **Multi-Frequency Superposition** banner, computes total True RMS magnitudes and total real power, and lets you click any row in *Node Voltages* or *Branch Currents & Power* to inspect the **Harmonic Spectrum & Time-Domain** card. **DC** mode evaluates the $0\ \text{Hz}$ component only.
+- **Transient Plot Tab:** Filter waveforms by **All**, **Voltage (v)**, or **Current (i)**, toggle individual traces (including node voltages `v(Node ...)`, source voltages `v(E...)`, and branch currents `i(...)`), and hover over the plot canvas to inspect exact instantaneous samples in milliseconds.
 
 ---
 
@@ -125,7 +128,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 Open the **Equiv** tab in the right inspector:
 1. Select **Thévenin / Norton** or **Two-Port [Z, Y, A]**.
-2. Set the **Extraction Frequency** (`0 Hz` for DC, or any positive frequency in Hz for AC phasor extraction).
+2. Set the **Extraction Frequency** (`0 Hz` for DC, or any positive frequency in Hz for AC phasor extraction), or click one of the **Active frequencies** quick-select pills shown below the input.
 3. Choose the extraction terminal node IDs displayed on the schematic (`(a, b)` for 1-Port, or `(1, 1')` and `(2, 2')` for 2-Port).
 4. Click **Extract Equivalent Parameters** — CircuitLab solves open-circuit voltages with active independent sources and injects unit test excitations with independent sources zeroed to output complex `V_th, Z_th, I_N, Y_th` or complete `[Z]`, `[Y]`, `[A]` matrices.
 
