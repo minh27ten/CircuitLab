@@ -9,7 +9,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 1. [Workspace Overview](#1-workspace-overview)
 2. [Schematic Capture & Orthogonal Wiring](#2-schematic-capture--orthogonal-wiring)
 3. [Keyboard Shortcuts](#3-keyboard-shortcuts)
-4. [Component Reference (`16+GND`)](#4-component-reference-16gnd)
+4. [Component Reference (`17+GND`)](#4-component-reference-17gnd)
 5. [Running the 4 Simulation Modes & Reading Results](#5-running-the-4-simulation-modes--reading-results)
 6. [Thévenin / Norton & Two-Port Parameter Extractor](#6-thévenin--norton--two-port-parameter-extractor)
 7. [Three-Phase Power System Analysis (Y / Δ & Neutral Shift)](#7-three-phase-power-system-analysis-y--δ--neutral-shift)
@@ -23,7 +23,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 **CircuitLab** organizes your engineering workbench into four regions:
 
 - **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
-- **Component Palette (Left Panel):** Houses all `16+GND` electrical components with real-time search by name, designator, or keyword (`resistor`, `op-amp`, `3-phase`, `two-port`, ...). Toggle panel visibility from the left toolbar button when working on large schematics.
+- **Component Palette (Left Panel):** Houses all `17+GND` electrical components with real-time search by name, designator, or keyword (`resistor`, `Z`, `op-amp`, `3-phase`, `two-port`, ...). Toggle panel visibility from the left toolbar button when working on large schematics.
 - **Schematic Canvas (Center):** Snap-to-grid `20 px` interactive editor featuring live node voltage (`N...`) and branch current (`I=...`) **Overlays**, smooth cursor-centered zoom (`+`, `−`, *Fit schematic to view*), and floating quick actions above selected elements.
 - **Inspector & Results Panel (Right Panel):** Organized into four tabs:
   - **Props:** Edit all electrical parameters of the selected component or wire segment.
@@ -70,7 +70,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 ---
 
-## 4. Component Reference (`16+GND`)
+## 4. Component Reference (`17+GND`)
 
 ### Sources & Reference
 - **Ground (`GND`):** `0 V` reference (`Node 0`). If omitted, the solver assigns a temporary reference node automatically and reports it in the diagnostic banner.
@@ -86,6 +86,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 - **Resistor (`RESISTOR`):** Resistance `R` ($\Omega$, minimum $10^{-6}\ \Omega$).
 - **Capacitor (`CAPACITOR`):** Capacitance `C` (F) and initial voltage `v_C(0)` (V) across pin 1 (`+`) to pin 2 (`−`).
 - **Inductor (`INDUCTOR`):** Inductance `L` (H) and initial current `i_L(0)` (A) flowing from pin 1 into pin 2.
+- **Complex Impedance (`IMPEDANCE` / `Z`):** Generalized branch impedance $Z = R + jX$ ($\Omega$) combining R, L, and C into a single branch block. Supports both rectangular (`R + jX`) and polar (`|Z| ∠ φ°`) input, displays equivalent admittance $Y = 1/Z$ and branch nature (inductive $X > 0$, capacitive $X < 0$, or resistive $X = 0$), and automatically synthesizes equivalent time-domain `R-L` or `R-C` branches in **Transient** mode at the circuit reference frequency.
 - **Mutual Coupling (`MUTUAL`):** Magnetic coupling `M` (H) between two inductors `L1` and `L2` on the schematic, with selectable dot polarity (`In-phase 1–1` or `Out-of-phase 1–2`). Supported in both **AC Phasor** and **Transient** modes.
 
 ### Controlled Sources & Ideal Op-Amp

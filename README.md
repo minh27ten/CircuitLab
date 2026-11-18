@@ -39,14 +39,14 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
 
 ---
 
-## 🧩 Supported Components (`16 + GND`)
+## 🧩 Supported Components (`17 + GND`)
 
-In addition to **Ground (`GND`)**, CircuitLab includes 16 standard electrical engineering elements:
+In addition to **Ground (`GND`)**, CircuitLab includes 17 standard electrical engineering elements:
 
 | Category | Type / Designator | Elements |
 | :--- | :--- | :--- |
 | **Independent Sources** | `V_SRC` (`E`), `I_SRC` (`J`) | Independent Voltage Source, Independent Current Source (DC / AC / Mixed multi-harmonic / Step) |
-| **Passive Elements** | `RESISTOR` (`R`), `CAPACITOR` (`C`), `INDUCTOR` (`L`), `MUTUAL` (`M`) | Resistor, Capacitor, Inductor, Mutual Coupling |
+| **Passive Elements** | `RESISTOR` (`R`), `CAPACITOR` (`C`), `INDUCTOR` (`L`), `IMPEDANCE` (`Z`), `MUTUAL` (`M`) | Resistor, Capacitor, Inductor, Complex Impedance $Z = R + jX$, Mutual Coupling |
 | **Dependent Sources** | `VCVS`, `CCVS`, `VCCS`, `CCCS` | All four linear controlled sources ($\mu, r, g, \beta$) |
 | **Active Analog** | `OPAMP` (`OA`) | Ideal Operational Amplifier ($V_+ = V_-$, $I_{\text{in}} = 0$) |
 | **Equivalent Networks** | `ONE_PORT` (`P1`), `TWO_PORT` (`P2`) | One-Port Network (Thévenin/Norton), Two-Port Network ($[Z], [Y], [A]$) |
@@ -77,7 +77,7 @@ Open `http://localhost:3000/` in your browser.
 | :--- | :--- |
 | `npm run dev` | Start Vite development server on port `3000` |
 | `npm run lint` | Run TypeScript static type checking (`tsc --noEmit`) |
-| `npm test` | Run all 34 solver & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
+| `npm test` | Run all 37 solver & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
 | `npm run build` | Build production static bundle into `dist/` |
 | `npm run preview` | Preview the production bundle locally via Vite Preview |
 | `npm run build:portable` | Bundle a single self-contained offline HTML file (`dist-portable/index.html`) |

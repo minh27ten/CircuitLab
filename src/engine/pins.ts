@@ -68,6 +68,15 @@ export const COMPONENT_CATALOG: ComponentMeta[] = [
     description: 'Inductive element (H) with initial current i_L(0) and dot polarity.',
   },
   {
+    type: 'IMPEDANCE',
+    label: 'Complex Impedance (Z)',
+    shortLabel: 'Impedance Z',
+    category: 'passive',
+    categoryLabel: 'Passive & Mutual Coupling',
+    prefix: 'Z',
+    description: 'Complex branch impedance Z = R + jX (Ω) combining R, L, C.',
+  },
+  {
     type: 'MUTUAL',
     label: 'Mutual Inductance (M)',
     shortLabel: 'Mutual M',
@@ -208,6 +217,7 @@ export function getLocalPins(el: Pick<CircuitElement, 'type' | 'opampInvertPins'
     case 'RESISTOR':
     case 'CAPACITOR':
     case 'INDUCTOR':
+    case 'IMPEDANCE':
     case 'ONE_PORT':
       return [
         { id: '1', label: '1', dx: -40, dy: 0 },
@@ -366,6 +376,8 @@ export function createDefaultElement(
       return { ...base, capacitance: 100e-6, initialVoltage: 0 };
     case 'INDUCTOR':
       return { ...base, inductance: 0.1, initialCurrent: 0 };
+    case 'IMPEDANCE':
+      return { ...base, impedance: { re: 40, im: 30 } };
     case 'MUTUAL': {
       const inductors = existingElements.filter((e) => e.type === 'INDUCTOR');
       return {
