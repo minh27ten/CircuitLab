@@ -22,9 +22,9 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 **CircuitLab** organizes your engineering workbench into four regions:
 
-- **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*, *Coupled Z*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
-- **Component Palette (Left Panel):** Houses all `17+GND` electrical components with real-time search by name, designator, or keyword (`resistor`, `Z`, `op-amp`, `3-phase`, `two-port`, ...). Toggle panel visibility from the left toolbar button when working on large schematics.
-- **Schematic Canvas (Center):** Snap-to-grid `20 px` interactive editor featuring live node voltage (`N...`) and branch current (`I=...`) **Overlays**, smooth cursor-centered zoom (`+`, `−`, *Fit schematic to view*), and floating quick actions above selected elements.
+- **Unified Top Header:** Component library toggle, compact preset dropdown (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*, *Coupled Z*, or *New Empty Circuit*), 4-mode simulation switcher (*DC*, *DC Steady*, *AC*, *Transient*), *Import / Export JSON*, Quick Guide **`?`**, and the **Run** button.
+- **Component Palette (Left Panel):** Houses all `17+GND` electrical components with real-time search by name, designator, or keyword (`R`, `Z`, `op-amp`, `3-phase`, `two-port`, ...).
+- **Schematic Canvas (Center):** Snap-to-grid `20 px` interactive editor with a floating canvas action dock (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, plus `Δt` / `T_end` in *Transient* mode), live node voltage (`N...`) and branch current (`I=...`) **Overlays**, smooth cursor-centered zoom (`+`, `−`, *Fit schematic to view*), and floating quick actions above selected elements.
 - **Inspector & Results Panel (Right Panel):** Organized into four tabs:
   - **Props:** Edit all electrical parameters of the selected component or wire segment.
   - **Results:** Inspect the *Multi-Frequency Superposition* banner (when multiple frequencies or harmonics are present), *Power Balance* summary (`P`, `Q`, *Verified* badge), *Node Voltages* table, and *Branch Currents & Power* table; click any node or element row to inspect its **Harmonic Spectrum & Time-Domain** card.
@@ -65,6 +65,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 | `Esc` | Cancel wire draft, exit placement mode, or clear selection |
 | `Ctrl + Z` | Undo last edit (40-step history) |
 | `Ctrl + Y` / `Ctrl + Shift + Z` | Redo undone edit |
+| `Ctrl + S` | Open Save File dialog to export schematic as JSON |
 | `Ctrl + Enter` | Execute **Run Simulation** immediately |
 | Mouse wheel / Drag empty canvas | Cursor-centered zoom in/out and canvas panning |
 
@@ -156,8 +157,8 @@ Open the **Equiv** tab in the right inspector:
 
 ## 8. Saving & Loading Circuits via JSON
 
-- Click **Export JSON** in the top toolbar to download a portable `circuit-<timestamp>.json` snapshot containing all components, parameters, and wires (plus optional transient `dt` and `tEnd` settings).
-- Click **Import JSON** to restore a saved file. The importer validates component types, simulation mode, coordinates, and wire connectivity before loading so malformed files cannot corrupt your active workspace.
+- Click **Export JSON** (or press `Ctrl + S`) to open the Save As dialog — letting you customize the file name and choose the destination folder on your computer (via Chrome/Edge File System Access API or the native Windows `.exe`; browsers without folder picking open a filename customization modal before downloading).
+- Click **Import** to restore a saved file. The importer validates component types, simulation mode, coordinates, and wire connectivity before loading so malformed files cannot corrupt your active workspace.
 
 ---
 

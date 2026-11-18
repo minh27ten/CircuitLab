@@ -309,47 +309,49 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
     return (
       <div className="space-y-3.5">
-        <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-          <div className="min-w-0">
-            <div className="text-xs font-semibold text-slate-900 truncate">{meta.label}</div>
-            <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{meta.description}</div>
+        <div className="space-y-2.5 pb-3 border-b border-slate-100">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-slate-900 truncate">{meta.label}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{meta.description}</div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => onRotateElement(el.id)}
+                aria-label={`Rotate ${el.name} 90 degrees`}
+                title="Rotate 90° (R)"
+                className="p-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteElement(el.id)}
+                aria-label={`Delete ${el.name}`}
+                title="Delete element (Del)"
+                className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={() => onRotateElement(el.id)}
-              aria-label={`Rotate ${el.name} 90 degrees`}
-              title="Rotate 90° (R)"
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              <RotateCw className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onDeleteElement(el.id)}
-              aria-label={`Delete ${el.name}`}
-              title="Delete element (Del)"
-              className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
 
-        {/* Basic identification */}
-        <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-slate-50/70 border border-slate-200/70">
-          <label className="block">
-            <span className="block text-[11px] font-medium text-slate-600 mb-1">Designator</span>
-            <input
-              type="text"
-              value={el.name}
-              onChange={(e) => update({ name: e.target.value })}
-              className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
-            />
-          </label>
-          <div className="block">
-            <span className="block text-[11px] font-medium text-slate-600 mb-1">Rotation</span>
-            <div className="px-2.5 py-1.5 text-xs font-mono tabular-nums bg-white border border-slate-200/80 rounded-lg text-slate-700">
+          {/* Compact designator & rotation */}
+          <div className="flex items-center gap-2">
+            <label className="flex-1 flex items-center gap-1.5 bg-slate-50/70 border border-slate-200/80 rounded-lg px-2 py-1 focus-within:bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/15 transition-all">
+              <span className="text-[11px] font-medium text-slate-500 shrink-0">Designator</span>
+              <input
+                type="text"
+                value={el.name}
+                onChange={(e) => update({ name: e.target.value })}
+                className="w-full min-w-0 bg-transparent text-xs font-mono font-semibold text-slate-900 focus:outline-none text-right"
+              />
+            </label>
+            <div
+              className="shrink-0 px-2.5 py-1 text-[11px] font-mono tabular-nums bg-slate-50/70 border border-slate-200/80 rounded-lg text-slate-600"
+              title="Current rotation angle"
+            >
               {el.rotation}°
             </div>
           </div>
@@ -1273,12 +1275,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="text-center py-12 px-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/40">
-                <GitBranch className="w-7 h-7 text-slate-300 mx-auto mb-2.5" />
-                <div className="text-xs font-semibold text-slate-700">No Element Selected</div>
-                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  Click a component or wire on the schematic to edit its parameters, rotate, or delete it.
+              <div className="text-center py-10 px-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 space-y-2">
+                <GitBranch className="w-6 h-6 text-slate-300 mx-auto" />
+                <div className="text-xs font-semibold text-slate-700">No Item Selected</div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Click any component or wire on the schematic to edit its values, rotate, or delete.
                 </p>
+                <div className="pt-1 flex flex-wrap items-center justify-center gap-1.5 text-[10px] text-slate-400">
+                  <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono">W: Wire</span>
+                  <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono">R: Rotate</span>
+                  <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono">Del: Delete</span>
+                </div>
               </div>
             )}
           </>

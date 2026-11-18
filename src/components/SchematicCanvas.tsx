@@ -2,18 +2,23 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   AlertTriangle,
+  Cable,
   Eye,
   EyeOff,
   Info,
   Maximize2,
   Minus,
+  MousePointer,
   Plus,
+  Redo2,
   RotateCw,
   Trash2,
+  Undo2,
 } from 'lucide-react';
 import {
   CircuitElement,
   ComponentType,
+  SimulationMode,
   SimulationResult,
   Wire,
   WirePoint,
@@ -28,6 +33,7 @@ import {
 } from '../engine/pins';
 import { buildNetlist, NetlistGraph } from '../engine/netlist';
 import { ComponentSymbol, getElementSummaryText } from './ComponentSymbol';
+import { DraftNumInput } from './DraftNumInput';
 
 export type EditorTool = 'SELECT' | 'WIRE';
 
@@ -39,10 +45,20 @@ interface SchematicCanvasProps {
   selectedWireId: string | null;
   tool: EditorTool;
   placingType: ComponentType | null;
+  mode: SimulationMode;
+  dt: number;
+  tEnd: number;
+  canUndo: boolean;
+  canRedo: boolean;
   simulationResult: SimulationResult | null;
   fitTrigger?: number;
   onSelectElement: (id: string | null) => void;
   onSelectWire: (id: string | null) => void;
+  onSelectTool: (tool: EditorTool) => void;
+  onChangeDt: (val: number) => void;
+  onChangeTEnd: (val: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
   onPlaceComponent: (type: ComponentType, x: number, y: number) => void;
   onMoveElement: (id: string, x: number, y: number) => void;
   onBeginDragElement: () => void;
@@ -51,6 +67,26 @@ interface SchematicCanvasProps {
   onDeleteWire?: (id: string) => void;
   onAddWire: (points: WirePoint[]) => void;
   onCancelPlace: () => void;
+}
+
+function getElementHighlightBox(el: CircuitElement): { x: number; y: number; w: number; h: number } {
+  const isVertical = hasVerticalPins(el);
+  if (el.type.startsWith('THREE_PHASE')) {
+    return isVertical ? { x: -76, y: -68, w: 152, h: 136 } : { x: -68, y: -76, w: 136, h: 152 };
+  }
+  if (el.type === 'TWO_PORT') {
+    return isVertical ? { x: -54, y: -68, w: 108, h: 136 } : { x: -68, y: -54, w: 136, h: 108 };
+  }
+  if (el.type === 'GND') {
+    return { x: -24, y: -26, w: 48, h: 48 };
+  }
+  if (el.type === 'MUTUAL') {
+    return isVertical ? { x: -24, y: -34, w: 48, h: 68 } : { x: -34, y: -24, w: 68, h: 48 };
+  }
+  if (el.type === 'OPAMP') {
+    return isVertical ? { x: -40, y: -44, w: 80, h: 88 } : { x: -44, y: -40, w: 88, h: 80 };
+  }
+  return isVertical ? { x: -26, y: -44, w: 52, h: 88 } : { x: -44, y: -26, w: 88, h: 52 };
 }
 
 function buildOrthogonalPath(a: WirePoint, b: WirePoint, horizontalFirst: boolean): WirePoint[] {
@@ -107,10 +143,20 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
   selectedWireId,
   tool,
   placingType,
+  mode,
+  dt,
+  tEnd,
+  canUndo,
+  canRedo,
   simulationResult,
   fitTrigger = 0,
   onSelectElement,
   onSelectWire,
+  onSelectTool,
+  onChangeDt,
+  onChangeTEnd,
+  onUndo,
+  onRedo,
   onPlaceComponent,
   onMoveElement,
   onBeginDragElement,
@@ -133,6 +179,8 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
   const [horizontalFirst, setHorizontalFirst] = useState(true);
   const [manualBendLock, setManualBendLock] = useState(false);
   const [hoveredPinKey, setHoveredPinKey] = useState<string | null>(null);
+  const [hoveredElementId, setHoveredElementId] = useState<string | null>(null);
+  const [hoveredWireId, setHoveredWireId] = useState<string | null>(null);
 
   const dragStateRef = useRef<{
     kind: 'PAN' | 'ELEMENT' | null;
@@ -379,15 +427,20 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
     }
   };
 
-  const handleSvgMouseUp = () => {
+  const handleSvgMouseUp = useCallback(() => {
     dragStateRef.current = {
       kind: null,
       startClientX: 0,
       startClientY: 0,
-      startPanX: pan.x,
-      startPanY: pan.y,
+      startPanX: viewRef.current.pan.x,
+      startPanY: viewRef.current.pan.y,
     };
-  };
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mouseup', handleSvgMouseUp);
+    return () => window.removeEventListener('mouseup', handleSvgMouseUp);
+  }, [handleSvgMouseUp]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -591,6 +644,12 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
         onMouseDown={handleSvgMouseDown}
         onMouseMove={handleSvgMouseMove}
         onMouseUp={handleSvgMouseUp}
+        onDoubleClick={(e) => {
+          if (!wireDraft || wireDraft.length === 0) return;
+          e.stopPropagation();
+          const pt = clientToWorld(e.clientX, e.clientY, true);
+          finishWireAt(pt);
+        }}
       >
         <defs>
           <pattern
@@ -644,6 +703,7 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
           {/* Conductors / wires */}
           {wires.map((w) => {
             const isSel = selectedWireId === w.id;
+            const isHovered = hoveredWireId === w.id && !isSel && !wireDraft;
             const ptsStr = w.points.map((p) => `${p.x},${p.y}`).join(' ');
             return (
               <g
@@ -654,23 +714,27 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
                   onSelectWire(w.id);
                   onSelectElement(null);
                 }}
+                onMouseEnter={() => setHoveredWireId(w.id)}
+                onMouseLeave={() => setHoveredWireId((prev) => (prev === w.id ? null : prev))}
                 className="cursor-pointer"
               >
                 <polyline
                   points={ptsStr}
                   fill="none"
                   stroke="transparent"
-                  strokeWidth={12}
+                  strokeWidth={14}
                   strokeLinejoin="round"
+                  pointerEvents="stroke"
                 />
-                {isSel && (
+                {(isSel || isHovered) && (
                   <polyline
                     points={ptsStr}
                     fill="none"
-                    stroke="#DBEAFE"
+                    stroke={isSel ? '#DBEAFE' : '#E2E8F0'}
                     strokeWidth={6}
                     strokeLinejoin="round"
                     strokeLinecap="round"
+                    pointerEvents="none"
                   />
                 )}
                 <polyline
@@ -729,6 +793,8 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
           {/* Circuit elements */}
           {elements.map((el) => {
             const isSel = selectedElementId === el.id;
+            const isElHovered = hoveredElementId === el.id && !isSel && !placingType && !wireDraft;
+            const highlightBox = getElementHighlightBox(el);
             const dotInfo = inductorDots.get(el.id);
             const branchBadge = branchCurrentPositions.get(el.id);
             const pins = pinsByElementId.get(el.id) ?? [];
@@ -742,6 +808,8 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
               <g
                 key={el.id}
                 transform={`translate(${el.x}, ${el.y})`}
+                onMouseEnter={() => setHoveredElementId(el.id)}
+                onMouseLeave={() => setHoveredElementId((prev) => (prev === el.id ? null : prev))}
                 onMouseDown={(e) => {
                   if (placingType || wireDraft) return;
                   e.stopPropagation();
@@ -763,18 +831,18 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
                 }}
                 className="cursor-pointer"
               >
-                {isSel && (
+                {(isSel || isElHovered) && (
                   <rect
-                    x={isThreePhase || isTwoPort ? -72 : -48}
-                    y={isThreePhase ? -76 : -48}
-                    width={isThreePhase || isTwoPort ? 144 : 96}
-                    height={isThreePhase ? 152 : 96}
+                    x={highlightBox.x}
+                    y={highlightBox.y}
+                    width={highlightBox.w}
+                    height={highlightBox.h}
                     rx={8}
-                    fill="#EFF6FF"
-                    fillOpacity={0.5}
-                    stroke="#3B82F6"
-                    strokeWidth={1.2}
-                    strokeDasharray="4 2"
+                    fill={isSel ? '#EFF6FF' : '#F1F5F9'}
+                    fillOpacity={isSel ? 0.55 : 0.65}
+                    stroke={isSel ? '#3B82F6' : '#CBD5E1'}
+                    strokeWidth={isSel ? 1.3 : 1}
+                    strokeDasharray={isSel ? '4 2' : undefined}
                     pointerEvents="none"
                   />
                 )}
@@ -884,7 +952,7 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
                       }
                       className="cursor-crosshair"
                     >
-                      <circle cx={0} cy={0} r={9} fill="transparent" />
+                      <circle cx={0} cy={0} r={10} fill="transparent" pointerEvents="all" />
                       {isPinHovered && (
                         <circle
                           cx={0}
@@ -972,51 +1040,55 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
       </svg>
 
       {/* Floating quick-action pill above selected element or wire */}
-      {!placingType && !wireDraft && selectedElement && (onRotateElement || onDeleteElement) && (
-        <div
-          style={{
-            left: `${Math.max(96, selectedElement.x * zoom + pan.x)}px`,
-            top: `${Math.max(48, selectedElement.y * zoom + pan.y - 68 * zoom)}px`,
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute -translate-x-1/2 -translate-y-full z-20 flex items-center gap-1 px-1.5 py-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg shadow-md"
-        >
-          <span className="text-[11px] font-mono font-semibold text-slate-700 px-1.5">
-            {selectedElement.name}
-          </span>
-          <div className="w-px h-3.5 bg-slate-200" />
-          {onRotateElement && (
-            <button
-              type="button"
-              onClick={() => onRotateElement(selectedElement.id)}
-              title="Rotate 90° (R)"
-              aria-label={`Quick rotate ${selectedElement.name}`}
-              className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-[11px] font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-            >
-              <RotateCw className="w-3 h-3" />
-              <span>Rotate</span>
-            </button>
-          )}
-          {onDeleteElement && (
-            <button
-              type="button"
-              onClick={() => onDeleteElement(selectedElement.id)}
-              title="Delete component (Del)"
-              aria-label={`Quick delete ${selectedElement.name}`}
-              className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors"
-            >
-              <Trash2 className="w-3 h-3" />
-              <span>Delete</span>
-            </button>
-          )}
-        </div>
-      )}
+      {!placingType && !wireDraft && selectedElement && (onRotateElement || onDeleteElement) && (() => {
+        const box = getElementHighlightBox(selectedElement);
+        const offsetPx = Math.abs(box.y) * zoom + 12;
+        return (
+          <div
+            style={{
+              left: `${Math.max(96, selectedElement.x * zoom + pan.x)}px`,
+              top: `${Math.max(64, selectedElement.y * zoom + pan.y - offsetPx)}px`,
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute -translate-x-1/2 -translate-y-full z-20 flex items-center gap-1 px-1.5 py-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg shadow-md"
+          >
+            <span className="text-[11px] font-mono font-semibold text-slate-700 px-1.5">
+              {selectedElement.name}
+            </span>
+            <div className="w-px h-3.5 bg-slate-200" />
+            {onRotateElement && (
+              <button
+                type="button"
+                onClick={() => onRotateElement(selectedElement.id)}
+                title="Rotate 90° (R)"
+                aria-label={`Quick rotate ${selectedElement.name}`}
+                className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-[11px] font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <RotateCw className="w-3 h-3" />
+                <span>Rotate</span>
+              </button>
+            )}
+            {onDeleteElement && (
+              <button
+                type="button"
+                onClick={() => onDeleteElement(selectedElement.id)}
+                title="Delete component (Del)"
+                aria-label={`Quick delete ${selectedElement.name}`}
+                className="inline-flex items-center gap-1 px-1.5 py-1 rounded text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Delete</span>
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {!placingType && !wireDraft && !selectedElement && selectedWireMid && selectedWireId && onDeleteWire && (
         <div
           style={{
             left: `${Math.max(96, selectedWireMid.x * zoom + pan.x)}px`,
-            top: `${Math.max(48, selectedWireMid.y * zoom + pan.y - 16)}px`,
+            top: `${Math.max(64, selectedWireMid.y * zoom + pan.y - 16)}px`,
           }}
           onMouseDown={(e) => e.stopPropagation()}
           className="absolute -translate-x-1/2 -translate-y-full z-20 flex items-center gap-1 px-1.5 py-1 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg shadow-md"
@@ -1034,23 +1106,145 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
         </div>
       )}
 
-      {/* Quick instruction banner during placement or wiring */}
-      {(placingType || wireDraft || tool === 'WIRE') && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md text-white text-xs px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-2.5 pointer-events-none z-20">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-          <span>
-            {placingType
-              ? 'Click grid to place component · Right-click or Esc to cancel'
-              : wireDraft
-                ? 'Click target pin or grid to connect · Space toggles bend · Esc cancels'
-                : 'Wire mode: Click a component pin or grid to start · Esc exits'}
-          </span>
+      {/* Minimalist floating canvas action dock & Transient step config */}
+      <div className="absolute top-3 inset-x-3 flex flex-col items-center gap-2 pointer-events-none z-20">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            className="pointer-events-auto flex items-center gap-0.5 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl p-1 shadow-sm"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                onSelectTool('SELECT');
+                onCancelPlace();
+              }}
+              title="Select & Move (V)"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                tool === 'SELECT' && !placingType
+                  ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/80'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+              }`}
+            >
+              <MousePointer className="w-3.5 h-3.5" />
+              <span>Select</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onSelectTool('WIRE');
+                onCancelPlace();
+              }}
+              title="Draw Orthogonal Wire (W)"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                tool === 'WIRE'
+                  ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/80'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+              }`}
+            >
+              <Cable className="w-3.5 h-3.5" />
+              <span>Wire</span>
+            </button>
+
+            <div className="w-px h-4 bg-slate-200 mx-0.5" />
+
+            <button
+              type="button"
+              disabled={!selectedElementId || !onRotateElement}
+              onClick={() => selectedElementId && onRotateElement?.(selectedElementId)}
+              aria-label="Rotate selected component"
+              title="Rotate 90° (R)"
+              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-35 transition-colors"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              disabled={(!selectedElementId || !onDeleteElement) && (!selectedWireId || !onDeleteWire)}
+              onClick={() => {
+                if (selectedElementId) onDeleteElement?.(selectedElementId);
+                else if (selectedWireId) onDeleteWire?.(selectedWireId);
+              }}
+              aria-label="Delete selected item"
+              title="Delete (Del)"
+              className="p-1.5 rounded-lg text-slate-600 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-35 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="w-px h-4 bg-slate-200 mx-0.5" />
+
+            <button
+              type="button"
+              disabled={!canUndo}
+              onClick={onUndo}
+              aria-label="Undo"
+              title="Undo (Ctrl+Z)"
+              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-35 transition-colors"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              disabled={!canRedo}
+              onClick={onRedo}
+              aria-label="Redo"
+              title="Redo (Ctrl+Shift+Z)"
+              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-35 transition-colors"
+            >
+              <Redo2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {mode === 'TRANSIENT' && (
+            <div
+              onMouseDown={(e) => e.stopPropagation()}
+              className="pointer-events-auto flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-sm text-[11px] font-mono tabular-nums"
+            >
+              <label className="flex items-center gap-1 text-slate-600">
+                <span>Δt</span>
+                <DraftNumInput
+                  ariaLabel="Time step Δt"
+                  value={dt}
+                  min={1e-6}
+                  onChange={onChangeDt}
+                  className="w-18 px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+                <span className="text-slate-400">s</span>
+              </label>
+              <div className="w-px h-3.5 bg-slate-200" />
+              <label className="flex items-center gap-1 text-slate-600">
+                <span>T_end</span>
+                <DraftNumInput
+                  ariaLabel="Stop time T_end"
+                  value={tEnd}
+                  min={1e-4}
+                  onChange={onChangeTEnd}
+                  className="w-14 px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+                <span className="text-slate-400">s</span>
+              </label>
+            </div>
+          )}
         </div>
-      )}
+
+        {(placingType || wireDraft || tool === 'WIRE') && (
+          <div className="bg-slate-900/95 backdrop-blur-md text-white text-xs px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-2.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span>
+              {placingType
+                ? 'Click grid to place component · Right-click or Esc to cancel'
+                : wireDraft
+                  ? 'Click target pin, double-click, or tap wire to connect · Space toggles bend · Esc cancels'
+                  : 'Wire mode: Click a component pin or grid to start · Esc exits'}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Diagnostics Panel (bottom left) */}
       {activeDiagnostics.length > 0 && (
-        <div className="absolute bottom-3 left-3 max-w-md space-y-1.5 z-10">
+        <div className="absolute bottom-3 left-3 max-w-[calc(100%-220px)] sm:max-w-md space-y-1.5 z-10">
           {activeDiagnostics.slice(0, 3).map((d, i) => {
             const styles =
               d.level === 'error'
@@ -1075,10 +1269,10 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
       {/* Empty state */}
       {elements.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl px-7 py-6 text-center max-w-sm shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900 mb-1.5">Schematic canvas is empty</h3>
+          <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl px-7 py-6 text-center max-w-sm shadow-sm space-y-2">
+            <h3 className="text-sm font-semibold text-slate-900">Schematic canvas is empty</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Select a component from the left library to place on the grid, or load a sample circuit from the header bar.
+              Drag components from the left library onto the grid, click pins (or press <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-[10px]">W</kbd>) to wire, or pick a <strong>Sample Circuit</strong> in the header.
             </p>
           </div>
         </div>

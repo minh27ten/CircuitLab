@@ -12,8 +12,8 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
 
 | Release File | Size | Platform | How to Run |
 | :--- | :---: | :--- | :--- |
-| **`CircuitLab-EN.exe`** | ~1.10 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2 and compiled with `+crt-static`, requiring no external DLLs). |
-| **`CircuitLab-EN-Portable.html`** | ~413 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
+| **`CircuitLab-EN.exe`** | ~1.05 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2, compiled with `+crt-static`, and supporting native Windows Save As dialogs). |
+| **`CircuitLab-EN-Portable.html`** | ~460 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
 
 *You can also host it statically on GitHub Pages at https://minh27ten.github.io/CircuitLab/.*
 
@@ -35,7 +35,7 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
   - **Two-Port Network:** Extract complex $[Z]$, $[Y]$, and transmission $[A]$ parameter matrices between any two port pairs.
 - **Three-Phase Power Systems & Interactive Schematic Capture:**
   - Three-phase $Y/\Delta$ sources, 4-wire transmission lines with neutral impedance $Z_N$, balanced/unbalanced $Y/\Delta$ loads, and **neutral point shift voltage ($U_{N'N}$)**.
-  - Snap-to-grid `20 px` orthogonal wiring (`Space` to toggle elbow), live canvas overlays, 6 built-in circuit presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*, *Coupled Z*), and `.json` circuit import/export.
+  - Snap-to-grid `20 px` orthogonal wiring (`Space` to toggle elbow), generous component hitboxes (`R`, `C`, `L`, `Z`, `GND`, etc.), minimalist floating canvas dock & Quick Guide (`?`), live canvas overlays, 6 built-in circuit presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*, *Coupled Z*), and `.json` circuit import/export with Save File dialog.
 
 ---
 
