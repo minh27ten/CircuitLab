@@ -35,10 +35,11 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 ## 2. Schematic Capture & Orthogonal Wiring
 
-### Placing & Arranging Components
+### Placing, Selecting & Arranging Components
 - **Drag and drop** any component card from the palette onto the canvas, or **click once** in the palette to enter placement mode and click anywhere on the schematic grid.
-- Drag existing elements on the grid to reposition them; pins snap cleanly to `20 px` grid coordinates.
-- Select a component and press **`R`** (or click **Rotate 90°** in the floating pill or top toolbar) to rotate clockwise (`0° → 90° → 180° → 270°`).
+- **Responsive Selection & Dragging:** Hovering any component (including capacitors `C`, inductors `L`, resistors `R`, impedances `Z`, or `GND`) shows a subtle hover outline covering its full expanded hitbox so you can reliably click to select or drag on the `20 px` grid.
+- Select a component and press **`R`** (or click **Rotate 90°** in the floating pill or canvas dock) to rotate clockwise (`0° → 90° → 180° → 270°`).
+- Click the **`?`** button in the top-right header anytime to open the **Quick Start & Shortcuts** reference modal.
 
 ### Drawing Orthogonal Wires
 1. Press **`W`** or click **Wire** on the toolbar (alternatively, **click directly on any component terminal pin** while in *Select* mode to start a wire immediately).

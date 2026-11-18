@@ -1,8 +1,10 @@
-# CircuitLab — Electrical Circuit & Power System Simulator
+# CircuitLab — Electrical Circuit & Power System Simulator (`v1.4.0`)
 
 **CircuitLab** is a **100% client-side** electrical circuit and three-phase power system simulator powered by a custom **Modified Nodal Analysis (MNA)** engine — running entirely on your device with no backend server, external APIs, or telemetry.
 
-> 📖 **Detailed User Manual:** See [USER_GUIDE.md](./USER_GUIDE.md).
+- 🌐 **Live Browser App:** https://minh27ten.github.io/CircuitLab/
+- 📦 **Download Desktop `.exe` / Portable HTML (`v1.4.0`):** https://github.com/minh27ten/CircuitLab/releases/latest
+- 📖 **Detailed User Manual:** See [USER_GUIDE.md](./USER_GUIDE.md).
 
 ---
 
@@ -12,10 +14,23 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
 
 | Release File | Size | Platform | How to Run |
 | :--- | :---: | :--- | :--- |
-| **`CircuitLab-EN.exe`** | ~1.05 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2, compiled with `+crt-static`, and supporting native Windows Save As dialogs). |
-| **`CircuitLab-EN-Portable.html`** | ~460 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
+| **`CircuitLab-EN.exe`** | ~1.15 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2, compiled with `+crt-static`, and supporting native Windows Save As dialogs). |
+| **`CircuitLab-EN-Portable.html`** | ~457 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
 
-*You can also host it statically on GitHub Pages at https://minh27ten.github.io/CircuitLab/.*
+*You can also run the hosted web app directly at https://minh27ten.github.io/CircuitLab/.*
+
+---
+
+## 🆕 What's New in `v1.4.0` & Release History
+
+- **`v1.4.0` — Improved Hitboxes, JSON Save Dialog & Minimalist UI:**
+  - **Expanded Component Hitboxes:** Added generous `68×36` transparent hit targets across the body and plate/coil gaps of **Capacitors (`C`)**, **Inductors (`L`)**, **Resistors (`R`)**, **Impedances (`Z`)**, **One-Port (`ONE_PORT`)**, and all `17 + GND` parts; added hover highlight outlines, snug component selection boxes, `r = 10` terminal pin targets, `14 px` wire hit strokes, and double-click wire completion.
+  - **JSON Export Save File Dialog (`Export JSON` / `Ctrl + S`):** Opens a native OS Save As dialog to customize filename and destination folder (`showSaveFilePicker` in supported browsers and Win32 `GetSaveFileNameW` in the Windows `.exe`), with a clean in-app filename customization modal fallback on Firefox, Safari, or `file://`.
+  - **Minimalist, Intuitive UI/UX:** Unified single top header with a **Sample Circuits dropdown**, 4-mode simulation switcher (`DC`, `DC Steady`, `AC`, `Transient`), interactive **Quick Guide & Shortcuts (`?`)** modal, and a floating canvas drawing dock with contextual `Δt`/`T_end` inputs.
+- **`v1.3.0` — Mutually Coupled Complex Impedances ($Z_M$):** Couple `L–L`, `Z–Z`, or mixed `L–Z` pairs with direct $Z_M = R_M + jX_M$ or $M$ (H) entry, independent `Pin 1` / `Pin 2` polarity dot placement, and built-in Preset #6 (`Coupled Z`).
+- **`v1.2.0` — 1-Port Maximum Power Transfer ($Z_{\text{opt}}$ / $P_{\max}$):** Solves optimal load impedance across 4 constraint modes (*Conjugate $Z^*$*, *Pure Resistive $R$*, *Fixed $X$*, *Fixed Angle $\varphi$*), plots $P(R_L)$ / $P(|Z_L|)$, verifies via full MNA, and applies $Z_{\text{opt}}$ to the schematic in 1 click (Preset #5 `1-Port P_max`).
+- **`v1.1.0` — Complex Impedance (`IMPEDANCE` / `Z`):** Algebraic ($R + jX$) and polar ($|Z| \angle \varphi^\circ$) input with automatic $R$-$L$ / $R$-$C$ transient synthesis.
+- **`v1.0.0` — Core MNA Workbench:** Four analysis modes (`DC`, `DC_SS`, multi-harmonic superposition `AC` + `MIXED` sources, Backward Euler `TRANSIENT`), `16 + GND` parts, 3-phase $Y/\Delta$ & neutral shift $U_{N'N}$, Thévenin/Norton & Two-Port `[Z], [Y], [A]` extraction, Rust/WebView2 desktop wrapper & Portable HTML.
 
 ---
 
@@ -95,7 +110,7 @@ Open `http://localhost:3000/` in your browser.
 │   ├── .cargo/config.toml         # Enables +crt-static for Windows MSVC builds
 │   ├── Cargo.toml
 │   ├── Cargo.lock
-│   └── src/main.rs                # Serves embedded dist-portable/index.html via custom protocol
+│   └── src/main.rs                # Serves embedded dist-portable/index.html & Win32 Save As dialog (GetSaveFileNameW)
 ├── src/
 │   ├── engine/                    # Core MNA solver & netlist compiler
 │   │   ├── complex.ts             # Complex number arithmetic
