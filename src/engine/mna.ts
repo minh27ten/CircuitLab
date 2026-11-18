@@ -5,6 +5,9 @@ import {
   DiagnosticMessage,
   ElementBranchResult,
   HarmonicComponent,
+  MaxPowerConstraintMode,
+  MaxPowerResult,
+  MaxPowerSweepPoint,
   NodeVoltageResult,
   SimulationMode,
   SimulationResult,
@@ -14,6 +17,7 @@ import {
 } from '../types/circuit';
 import { Complex, solveLinearComplex, solveLinearReal } from './complex';
 import { buildNetlist, NetlistGraph } from './netlist';
+import { getElementWorldPins } from './pins';
 
 const G_MIN = 1e-12;
 const SQRT2 = Math.SQRT2;
@@ -231,6 +235,7 @@ function solveSingleFrequencyMna(
   mode: 'DC' | 'DC_SS' | 'AC',
   options?: {
     disableIndependentSources?: boolean;
+    excludeElementIds?: Set<string>;
     extraStamp?: (ctx: {
       A: Complex[][];
       b: Complex[];
@@ -246,6 +251,9 @@ function solveSingleFrequencyMna(
   sys?: MnaLinearSystem;
   nodeVoltages: Map<string, Complex>;
 } {
+  const activeElements = options?.excludeElementIds?.size
+    ? elements.filter((e) => !options.excludeElementIds!.has(e.id))
+    : elements;
   const realNodeIds = netlist.allNodeIds.filter((id) => id !== '0');
   const nodeIdToIdx = new Map<string, number>();
   nodeIdToIdx.set('0', -1);
@@ -256,7 +264,7 @@ function solveSingleFrequencyMna(
 
   // Identify elements requiring current-sensing branch variables (referenced by CCVS / CCCS)
   const sensedIds = new Set<string>();
-  for (const el of elements) {
+  for (const el of activeElements) {
     if ((el.type === 'CCVS' || el.type === 'CCCS') && el.ctrlElementId) {
       sensedIds.add(el.ctrlElementId);
     }
@@ -278,7 +286,7 @@ function solveSingleFrequencyMna(
     return idx;
   };
 
-  for (const el of elements) {
+  for (const el of activeElements) {
     if (el.type === 'V_SRC' || el.type === 'VCVS' || el.type === 'CCVS') {
       const idx = registerAux(el.id, 'i');
       if (sensedIds.has(el.id)) senseBranchVar.set(el.id, idx);
@@ -388,7 +396,7 @@ function solveSingleFrequencyMna(
   const omega = 2 * Math.PI * targetFreqHz;
   const isDc = targetFreqHz === 0 || mode === 'DC' || mode === 'DC_SS';
 
-  for (const el of elements) {
+  for (const el of activeElements) {
     switch (el.type) {
       case 'GND':
         break;
@@ -2384,6 +2392,10 @@ export function extractTheveninNorton(
   nodeA: string,
   nodeB: string,
   freqHz: number,
+  options?: {
+    excludeElementIds?: Set<string>;
+    netlist?: NetlistGraph;
+  },
 ): TheveninNortonResult {
   if (nodeA === nodeB) {
     return {
@@ -2397,11 +2409,13 @@ export function extractTheveninNorton(
     };
   }
 
-  const netlist = buildNetlist(state.elements, state.wires);
+  const netlist = options?.netlist ?? buildNetlist(state.elements, state.wires);
   const mode = freqHz === 0 ? 'DC_SS' : 'AC';
 
   // Step 1: Compute open-circuit voltage Vth = Va - Vb with independent sources active
-  const openRes = solveSingleFrequencyMna(state.elements, netlist, freqHz, mode);
+  const openRes = solveSingleFrequencyMna(state.elements, netlist, freqHz, mode, {
+    excludeElementIds: options?.excludeElementIds,
+  });
   if (!openRes.success) {
     return {
       success: false,
@@ -2420,6 +2434,7 @@ export function extractTheveninNorton(
   // Step 2: Zero all independent sources and inject 1A test current from nodeB to nodeA
   const testRes = solveSingleFrequencyMna(state.elements, netlist, freqHz, mode, {
     disableIndependentSources: true,
+    excludeElementIds: options?.excludeElementIds,
     extraStamp: ({ b, getNodeIdx }) => {
       const ia = getNodeIdx(nodeA);
       const ib = getNodeIdx(nodeB);
@@ -2584,5 +2599,256 @@ export function extractTwoPort(
     Z: mapM(Z),
     Y: mapM(Y),
     A: mapM(A_mat),
+  };
+}
+
+/**
+ * Find optimal load impedance Z_opt for maximum active power transfer (P_max) on a 1-port network,
+ * verified directly by full-circuit MNA simulation, plus sweep curve points P(R_L / |Z_L|).
+ */
+export function findMaxPowerImpedance(
+  state: CircuitState,
+  nodeA: string,
+  nodeB: string,
+  freqHz: number,
+  options?: {
+    constraintMode?: MaxPowerConstraintMode;
+    fixedX?: number;
+    fixedAngleDeg?: number;
+    excludeElementId?: string;
+  },
+): MaxPowerResult {
+  const constraintMode: MaxPowerConstraintMode = options?.constraintMode ?? 'CONJUGATE';
+  const makeError = (error: string, effA = nodeA, effB = nodeB): MaxPowerResult => ({
+    success: false,
+    error,
+    freqHz,
+    nodeA: effA,
+    nodeB: effB,
+    constraintMode,
+    vth: { re: 0, im: 0 },
+    zth: { re: 0, im: 0 },
+    zOpt: { re: 0, im: 0 },
+    pMax: 0,
+    pSimulated: 0,
+    qAtOpt: 0,
+    sAtOpt: 0,
+    iLoad: { re: 0, im: 0 },
+    uLoad: { re: 0, im: 0 },
+    powerFactor: 1,
+    theveninEfficiencyPct: 0,
+    sweepParamLabel: constraintMode === 'FIXED_ANGLE' ? '|Z_L| (Ω)' : 'R_L (Ω)',
+    optParam: 0,
+    sweepPoints: [],
+  });
+
+  const origNetlist = buildNetlist(state.elements, state.wires);
+  let effNodeA = nodeA;
+  let effNodeB = nodeB;
+  let excludeSet: Set<string> | undefined;
+  let warning: string | undefined;
+
+  if (options?.excludeElementId) {
+    const targetEl = state.elements.find((e) => e.id === options.excludeElementId);
+    if (!targetEl) {
+      return makeError('Selected load element was not found on the schematic.');
+    }
+    const pins = getElementWorldPins(targetEl);
+    if (pins.length !== 2) {
+      return makeError(`Element ${targetEl.name} is not a two-terminal branch.`);
+    }
+    effNodeA = origNetlist.nodeMap[pins[0].key] ?? '0';
+    effNodeB = origNetlist.nodeMap[pins[1].key] ?? '0';
+    excludeSet = new Set([targetEl.id]);
+    const hasDependentSensor = state.elements.some(
+      (e) => (e.type === 'CCVS' || e.type === 'CCCS') && e.ctrlElementId === targetEl.id,
+    );
+    if (hasDependentSensor) {
+      warning = `Element ${targetEl.name} is sensed by a dependent source; opening this branch for Thévenin extraction removes its control current.`;
+    }
+  }
+
+  if (effNodeA === effNodeB) {
+    return makeError('The two 1-port terminals must belong to different nodes (currently shorted).', effNodeA, effNodeB);
+  }
+
+  const th = extractTheveninNorton(state, effNodeA, effNodeB, freqHz, {
+    excludeElementIds: excludeSet,
+    netlist: origNetlist,
+  });
+  if (!th.success) {
+    return makeError(th.error ?? 'Unable to extract Thévenin 1-port equivalent.', effNodeA, effNodeB);
+  }
+
+  const magZthRaw = Math.hypot(th.zth.re, th.zth.im);
+  if (magZthRaw > 1e8) {
+    return makeError(
+      'Terminals (a, b) are open or isolated from the active network (|Z_th| is too large for finite power transfer).',
+      effNodeA,
+      effNodeB,
+    );
+  }
+
+  const Rth = Math.abs(th.zth.re) < 1e-10 ? 0 : th.zth.re;
+  const Xth = freqHz === 0 || Math.abs(th.zth.im) < 1e-10 ? 0 : th.zth.im;
+  if (Rth < -1e-7) {
+    return makeError(
+      `Thévenin resistance R_th = ${Rth.toFixed(3)} Ω < 0 (active dependent network): passive load R_L ≥ 0 has no finite maximum power.`,
+      effNodeA,
+      effNodeB,
+    );
+  }
+
+  let rOpt = 0;
+  let xOpt = 0;
+  let optParam = 0;
+  const sweepParamLabel = constraintMode === 'FIXED_ANGLE' ? '|Z_L| (Ω)' : 'R_L (Ω)';
+
+  if (constraintMode === 'CONJUGATE') {
+    if (Rth <= 1e-7) {
+      return makeError(
+        'Lossless 1-port network (R_th ≈ 0 Ω): conjugate matching Z = −jX_th makes P → ∞. Switch to Pure Resistive R or Fixed X mode.',
+        effNodeA,
+        effNodeB,
+      );
+    }
+    rOpt = Rth;
+    xOpt = -Xth;
+    optParam = rOpt;
+  } else if (constraintMode === 'PURE_RESISTIVE') {
+    const magZ = Math.hypot(Rth, Xth);
+    if (magZ <= 1e-7) {
+      return makeError('Equivalent impedance |Z_th| ≈ 0 Ω; maximum power is unbounded.', effNodeA, effNodeB);
+    }
+    rOpt = magZ;
+    xOpt = 0;
+    optParam = rOpt;
+  } else if (constraintMode === 'FIXED_X') {
+    if (freqHz === 0) {
+      return makeError('At 0 Hz (DC), reactive jX does not apply; choose Free Z or Pure Resistive mode.', effNodeA, effNodeB);
+    }
+    const fixedX = Number.isFinite(options?.fixedX) ? options!.fixedX! : 0;
+    const rOptVal = Math.hypot(Rth, Xth + fixedX);
+    if (rOptVal <= 1e-7) {
+      return makeError('Lossless series resonance (R_th = 0, X_th + X = 0) at chosen X makes power unbounded.', effNodeA, effNodeB);
+    }
+    rOpt = rOptVal;
+    xOpt = fixedX;
+    optParam = rOpt;
+  } else {
+    if (freqHz === 0) {
+      return makeError('At 0 Hz (DC), phase angle constraint does not apply; choose Free Z or Pure Resistive mode.', effNodeA, effNodeB);
+    }
+    const angleDeg = Number.isFinite(options?.fixedAngleDeg) ? options!.fixedAngleDeg! : 0;
+    const angleRad = (angleDeg * Math.PI) / 180;
+    if (Math.cos(angleRad) <= 1e-6) {
+      return makeError('With |φ| ≥ 90°, load resistance R_L ≤ 0 so positive absorbed active power cannot be maximized.', effNodeA, effNodeB);
+    }
+    const magZ = Math.hypot(Rth, Xth);
+    if (magZ <= 1e-7) {
+      return makeError('Equivalent impedance |Z_th| ≈ 0 Ω; maximum power is unbounded.', effNodeA, effNodeB);
+    }
+    rOpt = magZ * Math.cos(angleRad);
+    xOpt = magZ * Math.sin(angleRad);
+    optParam = magZ;
+  }
+
+  const Vth = new Complex(th.vth.re, th.vth.im);
+  const Zth = new Complex(Rth, Xth);
+  const Zopt = new Complex(rOpt, xOpt);
+  const Ztot = Zth.add(Zopt);
+  const Iload = Vth.div(Ztot);
+  const Uload = Iload.mul(Zopt);
+  const Sopt = Uload.mul(Iload.conj());
+  const pMax = Sopt.re;
+  const qAtOpt = Sopt.im;
+  const sAtOpt = Sopt.mag();
+  const powerFactor = sAtOpt > 1e-12 ? pMax / sAtOpt : 1;
+  const theveninEfficiencyPct = Rth + rOpt > 1e-12 ? (rOpt / (Rth + rOpt)) * 100 : 0;
+
+  // Verify directly via full-circuit MNA with IMPEDANCE Z_opt placed across (effNodeA, effNodeB)
+  const simMode = freqHz === 0 ? 'DC_SS' : 'AC';
+  const tempZEl: CircuitElement = {
+    id: '__z_opt_verify',
+    name: 'Z_opt',
+    type: 'IMPEDANCE',
+    x: 0,
+    y: 0,
+    rotation: 0,
+    impedance: { re: rOpt, im: xOpt },
+  };
+  const baseElements = excludeSet
+    ? state.elements.filter((e) => !excludeSet!.has(e.id))
+    : state.elements;
+  const verifyNetlist: NetlistGraph = {
+    ...origNetlist,
+    nodeMap: {
+      ...origNetlist.nodeMap,
+      '__z_opt_verify:1': effNodeA,
+      '__z_opt_verify:2': effNodeB,
+    },
+  };
+  const simRes = solveSingleFrequencyMna([...baseElements, tempZEl], verifyNetlist, freqHz, simMode);
+  let pSimulated = pMax;
+  if (simRes.success && simRes.x && simRes.sys) {
+    pSimulated = extractElementBranchAtFreq(tempZEl, verifyNetlist, simRes.x, simRes.sys, freqHz, simMode).S.re;
+  }
+
+  const vthMagSq = Vth.mag() * Vth.mag();
+  const angleRad =
+    constraintMode === 'FIXED_ANGLE'
+      ? ((Number.isFinite(options?.fixedAngleDeg) ? options!.fixedAngleDeg! : 0) * Math.PI) / 180
+      : 0;
+  const xFixedForSweep =
+    constraintMode === 'FIXED_X'
+      ? Number.isFinite(options?.fixedX)
+        ? options!.fixedX!
+        : 0
+      : constraintMode === 'CONJUGATE'
+        ? xOpt
+        : 0;
+
+  const evalSweepPower = (param: number): number => {
+    let r = param;
+    let x = xFixedForSweep;
+    if (constraintMode === 'FIXED_ANGLE') {
+      r = param * Math.cos(angleRad);
+      x = param * Math.sin(angleRad);
+    }
+    const denom = (Rth + r) * (Rth + r) + (Xth + x) * (Xth + x);
+    return denom > 1e-24 ? (vthMagSq * r) / denom : 0;
+  };
+
+  const maxParam = Math.max(optParam * 3, 1e-3);
+  const rawParams = new Set<number>([0, optParam]);
+  const sampleCount = 40;
+  for (let i = 1; i <= sampleCount; i++) {
+    rawParams.add((maxParam * i) / sampleCount);
+  }
+  const sweepPoints: MaxPowerSweepPoint[] = Array.from(rawParams)
+    .sort((a, b) => a - b)
+    .map((param) => ({ param, powerW: evalSweepPower(param) }));
+
+  return {
+    success: true,
+    warning,
+    freqHz,
+    nodeA: effNodeA,
+    nodeB: effNodeB,
+    constraintMode,
+    vth: { re: Vth.re, im: Vth.im },
+    zth: { re: Rth, im: Xth },
+    zOpt: { re: rOpt, im: xOpt },
+    pMax,
+    pSimulated,
+    qAtOpt,
+    sAtOpt,
+    iLoad: { re: Iload.re, im: Iload.im },
+    uLoad: { re: Uload.re, im: Uload.im },
+    powerFactor,
+    theveninEfficiencyPct,
+    sweepParamLabel,
+    optParam,
+    sweepPoints,
   };
 }

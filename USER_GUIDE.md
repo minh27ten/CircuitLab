@@ -11,7 +11,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 3. [Keyboard Shortcuts](#3-keyboard-shortcuts)
 4. [Component Reference (`17+GND`)](#4-component-reference-17gnd)
 5. [Running the 4 Simulation Modes & Reading Results](#5-running-the-4-simulation-modes--reading-results)
-6. [Thévenin / Norton & Two-Port Parameter Extractor](#6-thévenin--norton--two-port-parameter-extractor)
+6. [Thévenin / Norton, Max Power Transfer (Z_opt) & Two-Port Extractor](#6-thévenin--norton-max-power-transfer-z_opt--two-port-extractor)
 7. [Three-Phase Power System Analysis (Y / Δ & Neutral Shift)](#7-three-phase-power-system-analysis-y--δ--neutral-shift)
 8. [Saving & Loading Circuits via JSON](#8-saving--loading-circuits-via-json)
 9. [Troubleshooting Common Diagnostics](#9-troubleshooting-common-diagnostics)
@@ -22,14 +22,14 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 **CircuitLab** organizes your engineering workbench into four regions:
 
-- **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
+- **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
 - **Component Palette (Left Panel):** Houses all `17+GND` electrical components with real-time search by name, designator, or keyword (`resistor`, `Z`, `op-amp`, `3-phase`, `two-port`, ...). Toggle panel visibility from the left toolbar button when working on large schematics.
 - **Schematic Canvas (Center):** Snap-to-grid `20 px` interactive editor featuring live node voltage (`N...`) and branch current (`I=...`) **Overlays**, smooth cursor-centered zoom (`+`, `−`, *Fit schematic to view*), and floating quick actions above selected elements.
 - **Inspector & Results Panel (Right Panel):** Organized into four tabs:
   - **Props:** Edit all electrical parameters of the selected component or wire segment.
   - **Results:** Inspect the *Multi-Frequency Superposition* banner (when multiple frequencies or harmonics are present), *Power Balance* summary (`P`, `Q`, *Verified* badge), *Node Voltages* table, and *Branch Currents & Power* table; click any node or element row to inspect its **Harmonic Spectrum & Time-Domain** card.
   - **Plot:** Multi-channel interactive SVG oscilloscope for transient waveforms `v(t)` and `i(t)`.
-  - **Equiv:** Extract *Thévenin / Norton* equivalents and *Two-Port `[Z]`, `[Y]`, `[A]`* matrices.
+  - **Equiv:** Extract *Thévenin / Norton* equivalents, solve *1-Port Max Power Transfer (`Z_opt`)*, and compute *Two-Port `[Z]`, `[Y]`, `[A]`* matrices.
 
 ---
 
@@ -125,13 +125,24 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 ---
 
-## 6. Thévenin / Norton & Two-Port Parameter Extractor
+## 6. Thévenin / Norton, Max Power Transfer (Z_opt) & Two-Port Extractor
 
 Open the **Equiv** tab in the right inspector:
-1. Select **Thévenin / Norton** or **Two-Port [Z, Y, A]**.
+1. Select **Thévenin / Norton**, **Max Power Z**, or **Two-Port [Z, Y, A]**.
 2. Set the **Extraction Frequency** (`0 Hz` for DC, or any positive frequency in Hz for AC phasor extraction), or click one of the **Active frequencies** quick-select pills shown below the input.
 3. Choose the extraction terminal node IDs displayed on the schematic (`(a, b)` for 1-Port, or `(1, 1')` and `(2, 2')` for 2-Port).
 4. Click **Extract Equivalent Parameters** — CircuitLab solves open-circuit voltages with active independent sources and injects unit test excitations with independent sources zeroed to output complex `V_th, Z_th, I_N, Y_th` or complete `[Z]`, `[Y]`, `[A]` matrices.
+
+### 1-Port Maximum Power Transfer Solver (`Max Power Z`)
+- **Two ways to specify the load port:**
+  - *Existing passive branch:* Pick an already-wired two-terminal passive component (`Z`, `R`, `L`, `C`) as the target load branch. CircuitLab excludes that branch when computing $V_{\text{th}}, Z_{\text{th}}$ without renumbering schematic node IDs.
+  - *Open 1-port terminals `(a, b)`:* Select open terminal nodes directly (try the **1-Port P_max** built-in preset to experiment right away).
+- **Four textbook load constraint modes:**
+  1. **Free $Z = R + jX$ (Conjugate $Z = Z_{\text{th}}^*$):** $Z_{\text{opt}} = R_{\text{th}} - jX_{\text{th}}$, $P_{\max} = \frac{|V_{\text{th}}|^2}{4R_{\text{th}}}$.
+  2. **Pure Resistive $Z = R$ ($X = 0$):** $R_{\text{opt}} = |Z_{\text{th}}| = \sqrt{R_{\text{th}}^2 + X_{\text{th}}^2}$.
+  3. **Fixed Reactance $X$, Vary $R$:** Enter the constrained load reactance $X$ and solve $R_{\text{opt}} = \sqrt{R_{\text{th}}^2 + (X_{\text{th}} + X)^2}$.
+  4. **Fixed Phase Angle $\varphi$ ($\cos\varphi$), Vary $|Z|$:** Enter load angle $\varphi$ (degrees) and solve $|Z_{\text{opt}}| = |Z_{\text{th}}|$ with $Z_{\text{opt}} = |Z_{\text{th}}|\angle\varphi$.
+- **Full-Circuit MNA Verification, Curve Plot & 1-Click Apply:** Click **Solve Optimal Z & Verify via MNA** to view theoretical $Z_{\text{opt}}, P_{\max}$ alongside direct full-circuit MNA verification ($P_{\text{MNA}}$), reactive/apparent power $Q, S$, load phasors $I_L, V_L$, power factor $\cos\varphi$, Thévenin efficiency $\eta$, an interactive $P(R_L)$ / $P(|Z_L|)$ curve, and a 1-click button to apply/attach $Z_{\text{opt}}$ directly onto the schematic and run the simulation.
 
 ---
 

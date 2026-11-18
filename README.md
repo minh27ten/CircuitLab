@@ -31,11 +31,11 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
   3. **AC Steady-State (`AC`):** Groups independent sources by frequency, solves complex phasor MNA per frequency, and applies **multi-frequency superposition** for total RMS values, phasors, instantaneous expressions, and $P, Q, S$.
   4. **Transient Analysis (`TRANSIENT`):** Implicit **Backward Euler** time-stepping ($\Delta t, T_{\text{end}}$) supporting initial conditions $u_C(0), i_L(0)$, DC / AC / Step excitations, mutual inductance $M$, and interactive multi-channel SVG waveform plotting.
 - **Equivalent Network Extractor:**
-  - **Thévenin / Norton:** Extract $V_{th}, Z_{th}, I_N, Y_N$ across any terminal pair $(a, b)$, including circuits with dependent sources.
+  - **Thévenin / Norton & Max Power Transfer ($Z_{opt}$):** Select any terminal pair $(a, b)$ or an existing passive load branch to extract $V_{th}, Z_{th}, I_N, Y_N$ (dependent sources supported), solve optimal load $Z_{opt}$ for $P_{max}$ across 4 constraint modes (*Conjugate $Z^*$*, *Pure Resistive $R$*, *Fixed Reactance $X$*, *Fixed Angle $\varphi$*), plot $P(R_L)$ / $P(|Z_L|)$, and apply directly to the schematic.
   - **Two-Port Network:** Extract complex $[Z]$, $[Y]$, and transmission $[A]$ parameter matrices between any two port pairs.
 - **Three-Phase Power Systems & Interactive Schematic Capture:**
   - Three-phase $Y/\Delta$ sources, 4-wire transmission lines with neutral impedance $Z_N$, balanced/unbalanced $Y/\Delta$ loads, and **neutral point shift voltage ($U_{N'N}$)**.
-  - Snap-to-grid `20 px` orthogonal wiring (`Space` to toggle elbow), live canvas overlays, 4 built-in circuit presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*), and `.json` circuit import/export.
+  - Snap-to-grid `20 px` orthogonal wiring (`Space` to toggle elbow), live canvas overlays, 5 built-in circuit presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*), and `.json` circuit import/export.
 
 ---
 
@@ -77,7 +77,7 @@ Open `http://localhost:3000/` in your browser.
 | :--- | :--- |
 | `npm run dev` | Start Vite development server on port `3000` |
 | `npm run lint` | Run TypeScript static type checking (`tsc --noEmit`) |
-| `npm test` | Run all 37 solver & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
+| `npm test` | Run all 40 solver & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
 | `npm run build` | Build production static bundle into `dist/` |
 | `npm run preview` | Preview the production bundle locally via Vite Preview |
 | `npm run build:portable` | Bundle a single self-contained offline HTML file (`dist-portable/index.html`) |
@@ -105,7 +105,7 @@ Open `http://localhost:3000/` in your browser.
 │   │   ├── mna.test.ts            # Core solver unit tests
 │   │   └── __tests__/             # solver.test.ts & stress.test.ts
 │   ├── components/                # React UI (Canvas, Palette, Inspector, TransientPlot, etc.)
-│   ├── data/presets.ts            # 4 built-in reference circuits
+│   ├── data/presets.ts            # 5 built-in reference circuits
 │   ├── types/circuit.ts           # Circuit & simulation result TypeScript interfaces
 │   ├── App.tsx                    # Top-level workbench state & keyboard shortcuts
 │   └── main.tsx
