@@ -22,7 +22,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 
 **CircuitLab** organizes your engineering workbench into four regions:
 
-- **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
+- **Top Toolbar & Simulation Bar:** Quickly load built-in presets (*RLC & Mutual M*, *Op-Amp & VCVS*, *3-Phase System*, *Mixed Source*, *1-Port P_max*, *Coupled Z*, or *Empty Circuit*), switch analysis mode (*DC*, *DC Steady-State*, *AC Phasor*, *Transient*), set `Δt` / `T_end`, trigger edit actions (*Select*, *Wire*, *Rotate*, *Delete*, *Undo/Redo*, *Export/Import JSON*), and press **Run Simulation**.
 - **Component Palette (Left Panel):** Houses all `17+GND` electrical components with real-time search by name, designator, or keyword (`resistor`, `Z`, `op-amp`, `3-phase`, `two-port`, ...). Toggle panel visibility from the left toolbar button when working on large schematics.
 - **Schematic Canvas (Center):** Snap-to-grid `20 px` interactive editor featuring live node voltage (`N...`) and branch current (`I=...`) **Overlays**, smooth cursor-centered zoom (`+`, `−`, *Fit schematic to view*), and floating quick actions above selected elements.
 - **Inspector & Results Panel (Right Panel):** Organized into four tabs:
@@ -87,7 +87,7 @@ Complete user manual covering schematic capture, component configuration, the fo
 - **Capacitor (`CAPACITOR`):** Capacitance `C` (F) and initial voltage `v_C(0)` (V) across pin 1 (`+`) to pin 2 (`−`).
 - **Inductor (`INDUCTOR`):** Inductance `L` (H) and initial current `i_L(0)` (A) flowing from pin 1 into pin 2.
 - **Complex Impedance (`IMPEDANCE` / `Z`):** Generalized branch impedance $Z = R + jX$ ($\Omega$) combining R, L, and C into a single branch block. Supports both rectangular (`R + jX`) and polar (`|Z| ∠ φ°`) input, displays equivalent admittance $Y = 1/Z$ and branch nature (inductive $X > 0$, capacitive $X < 0$, or resistive $X = 0$), and automatically synthesizes equivalent time-domain `R-L` or `R-C` branches in **Transient** mode at the circuit reference frequency.
-- **Mutual Coupling (`MUTUAL`):** Magnetic coupling `M` (H) between two inductors `L1` and `L2` on the schematic, with selectable dot polarity (`In-phase 1–1` or `Out-of-phase 1–2`). Supported in both **AC Phasor** and **Transient** modes.
+- **Mutual Coupling (`MUTUAL`):** Magnetic coupling between any pair of **inductors (`L`)** or **complex impedances (`Z`)** (including mixed `L–Z` pairs). Supports entering either **Mutual Inductance `M` (H)** or **Mutual Impedance $Z_M = R_M + jX_M$ ($\Omega$)**, and choosing the polarity dot (`•`) independently on `Pin 1` or `Pin 2` of each coupled branch. Fully supported in **AC Phasor**, **DC** (with $R_M$), and **Transient** modes (automatically converted using $f_{\text{ref}}$).
 
 ### Controlled Sources & Ideal Op-Amp
 - **VCVS (`μV`):** Voltage-Controlled Voltage Source — $V_{\text{out}} = \mu (V_{c+} - V_{c-})$. Pick `Control Node (+)` and `Control Node (−)` from resolved netlist node IDs.

@@ -72,11 +72,15 @@ export interface CircuitElement {
   initialVoltage?: number; // v_C(0)
   initialCurrent?: number; // i_L(0)
 
-  // Mutual inductance (MUTUAL)
+  // Mutual coupling (MUTUAL) — couples inductors L (M H) or impedances Z (Z_M Ω)
   l1Id?: string;
   l2Id?: string;
   mutualM?: number;
-  dotPolarity?: 1 | -1; // 1 = same dot polarity at pin 1, -1 = opposite polarity
+  mutualValueMode?: 'M_HENRY' | 'Z_OHM';
+  mutualZ?: ComplexInput;
+  dotPolarity?: 1 | -1; // 1 = same dot polarity at pin 1, -1 = opposite polarity (legacy compat)
+  l1DotPin?: 1 | 2;
+  l2DotPin?: 1 | 2;
 
   // Dependent sources (VCVS, CCVS, VCCS, CCCS)
   gain?: number; // mu, r, g, beta
