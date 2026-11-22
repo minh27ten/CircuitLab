@@ -1,9 +1,9 @@
-# CircuitLab — Electrical Circuit & Power System Simulator (`v1.5.0`)
+# CircuitLab — Electrical Circuit & Power System Simulator (`v1.6.0`)
 
 **CircuitLab** is a **100% client-side** electrical circuit and three-phase power system simulator powered by a custom **Modified Nodal Analysis (MNA)** engine — running entirely on your device with no backend server, external APIs, or telemetry.
 
 - 🌐 **Live Browser App:** https://minh27ten.github.io/CircuitLab/
-- 📦 **Download Desktop `.exe` / Portable HTML (`v1.5.0`):** https://github.com/minh27ten/CircuitLab/releases/latest
+- 📦 **Download Desktop `.exe` / Portable HTML (`v1.6.0`):** https://github.com/minh27ten/CircuitLab/releases/latest
 - 📖 **Detailed User Manual:** See [USER_GUIDE.md](./USER_GUIDE.md).
 
 ---
@@ -14,15 +14,19 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
 
 | Release File | Size | Platform | How to Run |
 | :--- | :---: | :--- | :--- |
-| **`CircuitLab-EN.exe`** | ~1.15 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2, compiled with `+crt-static`, and supporting native Windows Save As dialogs). |
-| **`CircuitLab-EN-Portable.html`** | ~457 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
+| **`CircuitLab-EN.exe`** | ~1.17 MB | Windows 10 / 11 (x64) | Double-click to launch as a native Windows desktop app (powered by Windows' built-in Edge WebView2, compiled with `+crt-static`, and supporting native Windows Save As dialogs). |
+| **`CircuitLab-EN-Portable.html`** | ~487 KB | Windows / macOS / Linux | Single self-contained offline HTML file — double-click to open locally in any modern browser (Chrome, Edge, Firefox, Safari) over `file://`. |
 
 *You can also run the hosted web app directly at https://minh27ten.github.io/CircuitLab/.*
 
 ---
 
-## 🆕 What's New in `v1.5.0` & Release History
+## 🆕 What's New in `v1.6.0` & Release History
 
+- **`v1.6.0` — Dedicated Diagonal Wiring, 3-Layer Overlap-Free Layout & Streamlined UI/UX:**
+  - **First-Class Diagonal Wiring (`Diag Wire / D`):** Separated **`Ortho Wire (W)`** and **`Diag Wire (D)`** directly on the top floating canvas dock with a live cursor angle badge (`deg°`, highlighted on `45°` multiples), automatic diagonal routing when wiring off-90° rotated terminals from *Select* mode, and `tol = 0.75px` T-junction snapping across diagonal segments (`netlist.ts` & `SchematicCanvas.tsx`).
+  - **3-Layer Overlap-Free Overlay Engine (`labelLayout.ts`):** Extended `computeOverlayLayout` so **Layer 1 (component designator/value text)** evaluates multi-candidate placements (*Left/Right/Above/Below*, split horizontal/vertical, diagonal quadrants) clear of rotated bodies, diagonal wires, junction dots, mutual polarity dots, and neighboring text before placing **Layer 2 (branch currents)** and **Layer 3 (node voltage badges)**.
+  - **Minimalist & Intuitive UI/UX:** Compacted left palette categories so every family fits without footer clipping, added quick **Ortho / Diag Wire** triggers in the empty *Props* inspector, a direct **Run Simulation** CTA in empty *Results*, and a highlighted **Re-run** indicator whenever schematic edits invalidate prior results.
 - **`v1.5.0` — 45° / Arbitrary Rotation Angles & Obstacle-Aware Label Layout:**
   - **45° & Arbitrary Element Rotation `[0, 360)`:** Added full rotation controls (`−45°`, custom degree input, `+45°`, and 8-angle quick presets `0° / 45° / 90° / 135° / 180° / 225° / 270° / 315°`) in *Props*, quick `+45°` / `90°` selection pill buttons, `Shift+R` (`+45°`) shortcut, rotated selection boxes, upright interior glyphs on controlled sources/`Z`/`Th`, plus **Straight/Diagonal wire routing** (hold `Shift` or toggle routing pill) with off-grid rotated pin snapping.
   - **Obstacle-Aware Schematic Overlays (`labelLayout.ts`):** Node voltage and branch current badges now score all node anchor points (pins, junctions, wire vertices/midpoints) to avoid element bodies, pins, **mutual polarity dots (`•`)**, element designators/values, wires, and other badges—adding a subtle dashed leader line whenever shifted clear of congested regions.
@@ -95,7 +99,7 @@ Open `http://localhost:3000/` in your browser.
 | :--- | :--- |
 | `npm run dev` | Start Vite development server on port `3000` |
 | `npm run lint` | Run TypeScript static type checking (`tsc --noEmit`) |
-| `npm test` | Run all 45 solver, overlay layout & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
+| `npm test` | Run all 47 solver, overlay layout & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
 | `npm run build` | Build production static bundle into `dist/` |
 | `npm run preview` | Preview the production bundle locally via Vite Preview |
 | `npm run build:portable` | Bundle a single self-contained offline HTML file (`dist-portable/index.html`) |

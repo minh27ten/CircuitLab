@@ -1187,4 +1187,143 @@ test('Overlay anti-overlap avoids component bodies, designators & mutual polarit
   }
 });
 
+test('T-junction snapping onto diagonal wire connects nodes and emits junction dot (tol = 0.75)', () => {
+  type Elem = CircuitState['elements'][number];
+  const e1: Elem = {
+    id: 'e1',
+    name: 'E1',
+    type: 'V_SRC',
+    x: 100,
+    y: 140,
+    rotation: 0,
+    waveform: 'DC',
+    dcValue: 10,
+  };
+  const r1: Elem = {
+    id: 'r1',
+    name: 'R1',
+    type: 'RESISTOR',
+    x: 240,
+    y: 220,
+    rotation: 0,
+    resistance: 100,
+  };
+  const r2: Elem = {
+    id: 'r2',
+    name: 'R2',
+    type: 'RESISTOR',
+    x: 150,
+    y: 220,
+    rotation: 90,
+    resistance: 100,
+  };
+  const gnd: Elem = { id: 'g', name: 'GND', type: 'GND', x: 100, y: 260, rotation: 0 };
+
+  const e1Pins = getElementWorldPins(e1);
+  const r1Pins = getElementWorldPins(r1);
+  const r2Pins = getElementWorldPins(r2);
+  const gndPin = getElementWorldPins(gnd)[0];
+  const e1Pos = e1Pins.find((p) => p.pinId === 'p')!;
+  const e1Neg = e1Pins.find((p) => p.pinId === 'n')!;
+
+  const state: CircuitState = {
+    elements: [e1, r1, r2, gnd],
+    wires: [
+      { id: 'wDiag', points: [{ x: e1Pos.x, y: e1Pos.y }, { x: 200, y: 201 }] },
+      { id: 'wTail', points: [{ x: 200, y: 201 }, { x: r1Pins[0].x, y: r1Pins[0].y }] },
+      { id: 'wTap', points: [{ x: 150, y: 151 }, { x: r2Pins[0].x, y: r2Pins[0].y }] },
+      {
+        id: 'wGnd',
+        points: [
+          { x: e1Neg.x, y: e1Neg.y },
+          { x: gndPin.x, y: gndPin.y },
+          { x: r2Pins[1].x, y: r2Pins[1].y },
+          { x: r1Pins[1].x, y: r1Pins[1].y },
+        ],
+      },
+    ],
+  };
+
+  const net = buildNetlist(state.elements, state.wires);
+  assert.equal(net.nodeMap['r1:1'], net.nodeMap['e1:p'], 'R1 branch merges with E1 positive terminal across diagonal wire');
+  assert.equal(net.nodeMap['r2:1'], net.nodeMap['e1:p'], 'Mid-segment diagonal T-junction at (150,151) merges reliably');
+  assert.ok(
+    net.junctionPoints.some((pt) => pt.x === 150 && pt.y === 151),
+    'Emits junction dot at mid-segment diagonal T-junction',
+  );
+
+  const sim = runSimulation(state, 'DC');
+  assert.equal(sim.success, true);
+  approx(sim.elements.find((e) => e.elementId === 'r1')!.currentRms, 0.1, 1e-4, 'I_R1 = 10V / 100Ω');
+  approx(sim.elements.find((e) => e.elementId === 'r2')!.currentRms, 0.1, 1e-4, 'I_R2 = 10V / 100Ω');
+});
+
+test('Component labels (Layer 1) and node badges (Layer 3) have zero overlap on bridge with 315° resistor', () => {
+  type Elem = CircuitState['elements'][number];
+  const j1: Elem = { id: 'j1', name: 'J1', type: 'I_SRC', x: 160, y: 220, rotation: 0, waveform: 'DC', dcValue: 2 };
+  const r2: Elem = { id: 'r2', name: 'R2', type: 'RESISTOR', x: 240, y: 140, rotation: 0, resistance: 100 };
+  const r3: Elem = { id: 'r3', name: 'R3', type: 'RESISTOR', x: 240, y: 300, rotation: 0, resistance: 100 };
+  const e1: Elem = {
+    id: 'e1',
+    name: 'E1',
+    type: 'V_SRC',
+    x: 320,
+    y: 220,
+    rotation: 0,
+    waveform: 'AC',
+    acValue: 220,
+    phaseDeg: 0,
+    freqHz: 50,
+  };
+  const r1: Elem = { id: 'r1', name: 'R1', type: 'RESISTOR', x: 240, y: 220, rotation: 315, resistance: 100 };
+  const elements = [j1, r2, r3, e1, r1];
+  const r1Pins = getElementWorldPins(r1);
+  const wires = [
+    { id: 'w1', points: [{ x: 160, y: 180 }, { x: 160, y: 140 }, { x: 200, y: 140 }] },
+    { id: 'w2', points: [{ x: 280, y: 140 }, { x: 320, y: 140 }, { x: 320, y: 180 }] },
+    { id: 'w3', points: [{ x: 160, y: 260 }, { x: 160, y: 300 }, { x: 200, y: 300 }] },
+    { id: 'w4', points: [{ x: 280, y: 300 }, { x: 320, y: 300 }, { x: 320, y: 260 }] },
+    { id: 'w5', points: [{ x: r1Pins[1].x, y: r1Pins[1].y }, { x: 280, y: 140 }] },
+    { id: 'w6', points: [{ x: r1Pins[0].x, y: r1Pins[0].y }, { x: 200, y: 300 }] },
+  ];
+
+  const net = buildNetlist(elements, wires);
+  const layout = computeOverlayLayout({
+    elements,
+    wires,
+    worldPins: elements.flatMap((el) => getElementWorldPins(el)),
+    netlist: net,
+    simulationResult: null,
+    inductorDots: new Map(),
+    getSummaryText: (el) => getElementSummaryText(el, elements),
+  });
+
+  const e1Text = layout.textLayouts.get('e1');
+  assert.ok(e1Text, 'E1 must have a computed label layout');
+  assert.equal(e1Text.name.anchor, 'start', 'E1 flips label outward to RIGHT away from diagonal R1');
+
+  const boxes: Array<{ label: string; x: number; y: number; w: number; h: number }> = [];
+  for (const [id, tl] of layout.textLayouts.entries()) {
+    tl.boxes.forEach((b, idx) => boxes.push({ label: `text:${id}:${idx}`, ...b }));
+  }
+  for (const nb of layout.nodeBadges) {
+    boxes.push({ label: `node:${nb.nodeId}`, x: nb.bx, y: nb.by, w: nb.boxW, h: nb.boxH });
+  }
+
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      if (boxes[i].label.startsWith('text:') && boxes[j].label.startsWith('text:')) {
+        const idA = boxes[i].label.split(':')[1];
+        const idB = boxes[j].label.split(':')[1];
+        if (idA === idB) continue;
+      }
+      assert.equal(
+        rectsOverlap(boxes[i], boxes[j], 0, 0),
+        false,
+        `Label ${boxes[i].label} overlaps ${boxes[j].label}`,
+      );
+    }
+  }
+});
+
 

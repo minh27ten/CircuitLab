@@ -41,9 +41,9 @@ Complete user manual covering schematic capture, component configuration, the fo
 - Select a component and press **`R`** (+90°), **`Shift+R`** (+45°), click **`+45°` / `90°`** on the floating selection pill, or use the **Rotation** section in the right-hand *Props* panel to enter **any custom angle `[0, 360)`** or click `0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°` presets (ideal for diagonal bridge branches).
 - Click the **`?`** button in the top-right header anytime to open the **Quick Start & Shortcuts** reference modal.
 
-### Drawing Orthogonal & Straight/Diagonal Wires
-1. Press **`W`** or click **Wire** on the toolbar (alternatively, **click directly on any component terminal pin** while in *Select* mode to start a wire immediately).
-2. Move toward the next bend or target pin; wires route orthogonally at `90°` by default, or hold **`Shift`** (or click **Routing: 90° Ortho / Straight/Diag** in the status bar) to draw **straight / 45° diagonal wires** directly into rotated off-grid component pins.
+### Drawing Orthogonal (`W`) & Diagonal Wires (`D`)
+1. Select directly from the top floating canvas dock: **`Ortho Wire (W)`** for `90°` Manhattan bends, or **`Diag Wire (D)`** to draw straight / arbitrary-angle diagonal wires (with a live angle indicator badge in `deg°` highlighting `45°` multiples). Clicking an off-90°-rotated component pin from *Select (`V`)* mode also starts a direct diagonal wire automatically.
+2. Move toward the next bend or target pin; holding **`Shift`** while using *Ortho Wire* temporarily routes diagonally as well. The 3-layer overlay engine automatically places component designators/values, branch currents, and node voltage badges clear of diagonal bodies, wires, T-junctions, and neighboring labels without overlap.
 3. Press **`Space`** while drafting an orthogonal wire to flip the elbow orientation (horizontal-first vs. vertical-first).
 4. Click the target terminal pin or **double-click** on the canvas to commit the wire. Press **`Esc`** to cancel an active wire draft.
 5. **Obstacle-Aware Schematic Overlays:** Toggle **Overlays** in the bottom-right control bar; node voltage and branch current badges automatically avoid component bodies, wires, element labels, and mutual polarity dots (`•`), adding subtle dashed leader lines whenever shifted to open canvas space.
@@ -59,7 +59,8 @@ Complete user manual covering schematic capture, component configuration, the fo
 | Shortcut | Action |
 | :--- | :--- |
 | `V` | Switch to **Select / Move** tool |
-| `W` | Switch to **Wire** routing tool |
+| `W` | Switch to **Ortho Wire (90°)** tool |
+| `D` | Switch to **Diag Wire (Straight / 45°)** tool |
 | `R` / `Shift + R` | Rotate selected component **+90°** or **+45° clockwise** |
 | `Shift` *(while wiring)* | Temporarily switch between **90° Ortho** and **Straight / 45° Diagonal** wiring |
 | `Space` | Flip orthogonal bend orientation while drafting a wire |

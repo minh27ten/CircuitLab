@@ -634,7 +634,10 @@ export default function App() {
         setTool('SELECT');
         setPlacingType(null);
       } else if ((e.key === 'w' || e.key === 'W') && !e.ctrlKey && !e.metaKey) {
-        setTool((prev) => (prev === 'WIRE' ? 'SELECT' : 'WIRE'));
+        setTool((prev) => (prev === 'WIRE_ORTHO' ? 'SELECT' : 'WIRE_ORTHO'));
+        setPlacingType(null);
+      } else if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey && !e.metaKey) {
+        setTool((prev) => (prev === 'WIRE_DIAG' ? 'SELECT' : 'WIRE_DIAG'));
         setPlacingType(null);
       } else if ((e.key === 'r' || e.key === 'R') && selectedElementId && !e.ctrlKey && !e.metaKey) {
         handleRotateElement(selectedElementId, e.shiftKey ? 45 : 90);
@@ -874,17 +877,13 @@ export default function App() {
           <button
             type="button"
             onClick={() => handleRunSimulation()}
-            title="Run Simulation (Ctrl+Enter)"
-            className="relative inline-flex items-center gap-1.5 ml-1 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 active:scale-[0.99] transition-all shadow-2xs whitespace-nowrap"
+            title={needsRerun ? 'Circuit modified — click Run (Ctrl+Enter) to update results' : 'Run Simulation (Ctrl+Enter)'}
+            className={`relative inline-flex items-center gap-1.5 ml-1 px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 active:scale-[0.99] transition-all shadow-2xs whitespace-nowrap ${
+              needsRerun ? 'ring-2 ring-amber-300/90' : ''
+            }`}
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Run</span>
-            {needsRerun && (
-              <span
-                className="w-2 h-2 rounded-full bg-amber-300 ring-2 ring-blue-600"
-                title="Circuit modified, click to update results"
-              />
-            )}
+            <span>{needsRerun ? 'Re-run' : 'Run'}</span>
           </button>
 
           <div className="w-px h-4 bg-slate-200 mx-0.5" />
@@ -982,6 +981,8 @@ export default function App() {
             onRotateElement={handleRotateElement}
             onDeleteElement={handleDeleteElement}
             onDeleteWire={handleDeleteWire}
+            onSelectTool={setTool}
+            onRunSimulationNow={() => handleRunSimulation()}
             onRunTransientNow={() => handleRunSimulation('TRANSIENT')}
             onApplyMaxPowerImpedance={handleApplyMaxPowerImpedance}
           />
@@ -1070,7 +1071,7 @@ export default function App() {
           >
             <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Quick Start · CircuitLab v1.5</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Quick Start · CircuitLab v1.6</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Fast schematic capture & electrical circuit simulation workflow
                 </p>
@@ -1093,9 +1094,9 @@ export default function App() {
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1">
-                <div className="font-semibold text-blue-700">2. Flexible Wiring</div>
+                <div className="font-semibold text-blue-700">2. Ortho & Diag Wires</div>
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Press <kbd className="px-1 bg-white border rounded font-mono">W</kbd> or click component pins. Hold <kbd className="px-1 bg-white border rounded font-mono">Shift</kbd> to draw straight/45° diagonal wires.
+                  Pick <kbd className="px-1 bg-white border rounded font-mono">W</kbd> (90° ortho) or <kbd className="px-1 bg-white border rounded font-mono">D</kbd> (diagonal / straight). Hold <kbd className="px-1 bg-white border rounded font-mono">Shift</kbd> to switch anytime.
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1">
@@ -1112,9 +1113,9 @@ export default function App() {
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                 {[
-                  ['V / W', 'Select / Wire tool'],
-                  ['Space', 'Toggle wire bend direction'],
-                  ['Shift (wiring)', 'Straight / 45° diagonal wire'],
+                  ['V / W / D', 'Select / Ortho / Diagonal Wire'],
+                  ['Space', 'Toggle ortho wire bend direction'],
+                  ['Shift (wiring)', 'Temporarily flip Ortho ↔ Diagonal'],
                   ['R / Shift + R', 'Rotate element 90° / +45°'],
                   ['F', 'Fit schematic to view'],
                   ['Del', 'Delete selected item'],
