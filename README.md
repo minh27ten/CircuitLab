@@ -1,9 +1,9 @@
-# CircuitLab — Electrical Circuit & Power System Simulator (`v1.4.0`)
+# CircuitLab — Electrical Circuit & Power System Simulator (`v1.5.0`)
 
 **CircuitLab** is a **100% client-side** electrical circuit and three-phase power system simulator powered by a custom **Modified Nodal Analysis (MNA)** engine — running entirely on your device with no backend server, external APIs, or telemetry.
 
 - 🌐 **Live Browser App:** https://minh27ten.github.io/CircuitLab/
-- 📦 **Download Desktop `.exe` / Portable HTML (`v1.4.0`):** https://github.com/minh27ten/CircuitLab/releases/latest
+- 📦 **Download Desktop `.exe` / Portable HTML (`v1.5.0`):** https://github.com/minh27ten/CircuitLab/releases/latest
 - 📖 **Detailed User Manual:** See [USER_GUIDE.md](./USER_GUIDE.md).
 
 ---
@@ -21,8 +21,11 @@ Download either standalone deliverable from **GitHub Releases** and run it immed
 
 ---
 
-## 🆕 What's New in `v1.4.0` & Release History
+## 🆕 What's New in `v1.5.0` & Release History
 
+- **`v1.5.0` — 45° / Arbitrary Rotation Angles & Obstacle-Aware Label Layout:**
+  - **45° & Arbitrary Element Rotation `[0, 360)`:** Added full rotation controls (`−45°`, custom degree input, `+45°`, and 8-angle quick presets `0° / 45° / 90° / 135° / 180° / 225° / 270° / 315°`) in *Props*, quick `+45°` / `90°` selection pill buttons, `Shift+R` (`+45°`) shortcut, rotated selection boxes, upright interior glyphs on controlled sources/`Z`/`Th`, plus **Straight/Diagonal wire routing** (hold `Shift` or toggle routing pill) with off-grid rotated pin snapping.
+  - **Obstacle-Aware Schematic Overlays (`labelLayout.ts`):** Node voltage and branch current badges now score all node anchor points (pins, junctions, wire vertices/midpoints) to avoid element bodies, pins, **mutual polarity dots (`•`)**, element designators/values, wires, and other badges—adding a subtle dashed leader line whenever shifted clear of congested regions.
 - **`v1.4.0` — Improved Hitboxes, JSON Save Dialog & Minimalist UI:**
   - **Expanded Component Hitboxes:** Added generous `68×36` transparent hit targets across the body and plate/coil gaps of **Capacitors (`C`)**, **Inductors (`L`)**, **Resistors (`R`)**, **Impedances (`Z`)**, **One-Port (`ONE_PORT`)**, and all `17 + GND` parts; added hover highlight outlines, snug component selection boxes, `r = 10` terminal pin targets, `14 px` wire hit strokes, and double-click wire completion.
   - **JSON Export Save File Dialog (`Export JSON` / `Ctrl + S`):** Opens a native OS Save As dialog to customize filename and destination folder (`showSaveFilePicker` in supported browsers and Win32 `GetSaveFileNameW` in the Windows `.exe`), with a clean in-app filename customization modal fallback on Firefox, Safari, or `file://`.
@@ -92,7 +95,7 @@ Open `http://localhost:3000/` in your browser.
 | :--- | :--- |
 | `npm run dev` | Start Vite development server on port `3000` |
 | `npm run lint` | Run TypeScript static type checking (`tsc --noEmit`) |
-| `npm test` | Run all 43 solver & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
+| `npm test` | Run all 45 solver, overlay layout & stress unit tests (`mna.test.ts`, `solver.test.ts`, `stress.test.ts`) |
 | `npm run build` | Build production static bundle into `dist/` |
 | `npm run preview` | Preview the production bundle locally via Vite Preview |
 | `npm run build:portable` | Bundle a single self-contained offline HTML file (`dist-portable/index.html`) |
@@ -114,8 +117,9 @@ Open `http://localhost:3000/` in your browser.
 ├── src/
 │   ├── engine/                    # Core MNA solver & netlist compiler
 │   │   ├── complex.ts             # Complex number arithmetic
-│   │   ├── pins.ts                # Rotation-aware terminal pin geometry
-│   │   ├── netlist.ts             # Orthogonal wire union-find & topology validation
+│   │   ├── pins.ts                # Rotation-aware terminal pin geometry (supports 45° & arbitrary angles)
+│   │   ├── labelLayout.ts         # Obstacle-aware node/branch overlay layout avoiding bodies & dots
+│   │   ├── netlist.ts             # Wire union-find & topology validation
 │   │   ├── mna.ts                 # DC, DC_SS, multi-freq AC, Transient, Thévenin & Two-Port solvers
 │   │   ├── mna.test.ts            # Core solver unit tests
 │   │   └── __tests__/             # solver.test.ts & stress.test.ts

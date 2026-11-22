@@ -25,7 +25,13 @@ import {
   Wire,
   WirePoint,
 } from './types/circuit';
-import { createDefaultElement, getElementWorldPins, isValidComponentType, snapToGrid } from './engine/pins';
+import {
+  createDefaultElement,
+  getElementWorldPins,
+  isValidComponentType,
+  normalizeRotation,
+  snapToGrid,
+} from './engine/pins';
 import { buildNetlist } from './engine/netlist';
 import { runSimulation } from './engine/mna';
 import { CIRCUIT_PRESETS, CircuitPreset } from './data/presets';
@@ -217,14 +223,12 @@ export default function App() {
   };
 
   const handleRotateElement = useCallback(
-    (id: string) => {
+    (id: string, deltaDeg = 90) => {
       pushHistory(circuit);
       setCircuit((prev) => ({
         ...prev,
         elements: prev.elements.map((el) =>
-          el.id === id
-            ? { ...el, rotation: ((el.rotation + 90) % 360) as CircuitElement['rotation'] }
-            : el,
+          el.id === id ? { ...el, rotation: normalizeRotation(el.rotation + deltaDeg) } : el,
         ),
       }));
       setSimulationResult(null);
@@ -517,7 +521,8 @@ export default function App() {
               isValidComponentType(c.type) &&
               Number.isFinite(c.x) &&
               Number.isFinite(c.y) &&
-              [0, 90, 180, 270].includes(c.rotation) &&
+              typeof c.rotation === 'number' &&
+              Number.isFinite(c.rotation) &&
               validWf &&
               validHarmonics &&
               validImpedance &&
@@ -542,7 +547,10 @@ export default function App() {
         }
 
         const nextCircuit: CircuitState = {
-          elements: rawCircuit.elements,
+          elements: (rawCircuit.elements as CircuitElement[]).map((item) => ({
+            ...item,
+            rotation: normalizeRotation(item.rotation),
+          })),
           wires: rawCircuit.wires,
         };
         const validModes: SimulationMode[] = ['DC', 'DC_SS', 'AC', 'TRANSIENT'];
@@ -629,7 +637,7 @@ export default function App() {
         setTool((prev) => (prev === 'WIRE' ? 'SELECT' : 'WIRE'));
         setPlacingType(null);
       } else if ((e.key === 'r' || e.key === 'R') && selectedElementId && !e.ctrlKey && !e.metaKey) {
-        handleRotateElement(selectedElementId);
+        handleRotateElement(selectedElementId, e.shiftKey ? 45 : 90);
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedElementId) handleDeleteElement(selectedElementId);
         else if (selectedWireId) handleDeleteWire(selectedWireId);
@@ -1062,7 +1070,7 @@ export default function App() {
           >
             <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Quick Start · CircuitLab v1.4</h2>
+                <h2 className="text-sm font-semibold text-slate-900">Quick Start · CircuitLab v1.5</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Fast schematic capture & electrical circuit simulation workflow
                 </p>
@@ -1079,15 +1087,15 @@ export default function App() {
 
             <div className="grid grid-cols-3 gap-2.5 text-xs">
               <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1">
-                <div className="font-semibold text-blue-700">1. Place Parts</div>
+                <div className="font-semibold text-blue-700">1. Place & Rotate</div>
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Drag from the left palette or click to place on the grid. Press <kbd className="px-1 bg-white border rounded font-mono">R</kbd> to rotate.
+                  Drag from the left palette or click to place on the grid. Press <kbd className="px-1 bg-white border rounded font-mono">R</kbd> (90°), <kbd className="px-1 bg-white border rounded font-mono">Shift+R</kbd> (45°), or set any angle.
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1">
-                <div className="font-semibold text-blue-700">2. Orthogonal Wire</div>
+                <div className="font-semibold text-blue-700">2. Flexible Wiring</div>
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Press <kbd className="px-1 bg-white border rounded font-mono">W</kbd> or click any component pin directly. Crossing wires stay isolated.
+                  Press <kbd className="px-1 bg-white border rounded font-mono">W</kbd> or click component pins. Hold <kbd className="px-1 bg-white border rounded font-mono">Shift</kbd> to draw straight/45° diagonal wires.
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-1">
@@ -1106,7 +1114,8 @@ export default function App() {
                 {[
                   ['V / W', 'Select / Wire tool'],
                   ['Space', 'Toggle wire bend direction'],
-                  ['R', 'Rotate element 90°'],
+                  ['Shift (wiring)', 'Straight / 45° diagonal wire'],
+                  ['R / Shift + R', 'Rotate element 90° / +45°'],
                   ['F', 'Fit schematic to view'],
                   ['Del', 'Delete selected item'],
                   ['Ctrl + Z / Y', 'Undo / Redo'],

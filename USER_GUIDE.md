@@ -38,14 +38,15 @@ Complete user manual covering schematic capture, component configuration, the fo
 ### Placing, Selecting & Arranging Components
 - **Drag and drop** any component card from the palette onto the canvas, or **click once** in the palette to enter placement mode and click anywhere on the schematic grid.
 - **Responsive Selection & Dragging:** Hovering any component (including capacitors `C`, inductors `L`, resistors `R`, impedances `Z`, or `GND`) shows a subtle hover outline covering its full expanded hitbox so you can reliably click to select or drag on the `20 px` grid.
-- Select a component and press **`R`** (or click **Rotate 90°** in the floating pill or canvas dock) to rotate clockwise (`0° → 90° → 180° → 270°`).
+- Select a component and press **`R`** (+90°), **`Shift+R`** (+45°), click **`+45°` / `90°`** on the floating selection pill, or use the **Rotation** section in the right-hand *Props* panel to enter **any custom angle `[0, 360)`** or click `0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°` presets (ideal for diagonal bridge branches).
 - Click the **`?`** button in the top-right header anytime to open the **Quick Start & Shortcuts** reference modal.
 
-### Drawing Orthogonal Wires
+### Drawing Orthogonal & Straight/Diagonal Wires
 1. Press **`W`** or click **Wire** on the toolbar (alternatively, **click directly on any component terminal pin** while in *Select* mode to start a wire immediately).
-2. Move toward the next bend or target pin; the preview automatically routes orthogonally at `90°`.
-3. Press **`Space`** while drafting a wire to flip the elbow orientation (horizontal-first vs. vertical-first).
+2. Move toward the next bend or target pin; wires route orthogonally at `90°` by default, or hold **`Shift`** (or click **Routing: 90° Ortho / Straight/Diag** in the status bar) to draw **straight / 45° diagonal wires** directly into rotated off-grid component pins.
+3. Press **`Space`** while drafting an orthogonal wire to flip the elbow orientation (horizontal-first vs. vertical-first).
 4. Click the target terminal pin or **double-click** on the canvas to commit the wire. Press **`Esc`** to cancel an active wire draft.
+5. **Obstacle-Aware Schematic Overlays:** Toggle **Overlays** in the bottom-right control bar; node voltage and branch current badges automatically avoid component bodies, wires, element labels, and mutual polarity dots (`•`), adding subtle dashed leader lines whenever shifted to open canvas space.
 
 > **Crossing vs. T-Junction Rules:**
 > - **Perpendicular crossing wires do NOT short-circuit** — they remain electrically isolated crossovers.
@@ -59,7 +60,8 @@ Complete user manual covering schematic capture, component configuration, the fo
 | :--- | :--- |
 | `V` | Switch to **Select / Move** tool |
 | `W` | Switch to **Wire** routing tool |
-| `R` | Rotate selected component **90° clockwise** |
+| `R` / `Shift + R` | Rotate selected component **+90°** or **+45° clockwise** |
+| `Shift` *(while wiring)* | Temporarily switch between **90° Ortho** and **Straight / 45° Diagonal** wiring |
 | `Space` | Flip orthogonal bend orientation while drafting a wire |
 | `F` | Fit and center the entire schematic inside the viewport |
 | `Delete` / `Backspace` | Delete selected component or wire segment |
